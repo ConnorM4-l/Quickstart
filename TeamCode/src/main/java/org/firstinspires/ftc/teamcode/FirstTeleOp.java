@@ -112,10 +112,10 @@ public class FirstTeleOp extends OpMode {
          * Note: The settings here assume direct drive on left and right wheels. Gear
          * Reduction or 90 Deg drives may require direction flips
          */
-        bl.setDirection(DcMotor.Direction.FORWARD);
-        fl.setDirection(DcMotor.Direction.FORWARD);
-        br.setDirection(DcMotor.Direction.REVERSE);
-        fr.setDirection(DcMotor.Direction.REVERSE);
+        bl.setDirection(DcMotor.Direction.REVERSE);
+        fl.setDirection(DcMotor.Direction.REVERSE);
+        br.setDirection(DcMotor.Direction.FORWARD);
+        fr.setDirection(DcMotor.Direction.FORWARD);
 
         /*
          * Here we set our launcher to the RUN_USING_ENCODER runmode.
@@ -125,6 +125,7 @@ public class FirstTeleOp extends OpMode {
          * through any wiring.
          */
         //launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        launcher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         /*
          * Setting zeroPowerBehavior to BRAKE enables a "brake mode". This causes the motor to
@@ -147,8 +148,8 @@ public class FirstTeleOp extends OpMode {
          * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
          * both work to feed the ball into the robot.
          */
-        leftFeeder.setDirection(CRServo.Direction.REVERSE);
-        rightFeeder.setDirection(CRServo.Direction.FORWARD);
+        leftFeeder.setDirection(CRServo.Direction.FORWARD);
+        rightFeeder.setDirection(CRServo.Direction.REVERSE);
 
         /*
          * Tell the driver that initialization is complete.
@@ -202,6 +203,8 @@ public class FirstTeleOp extends OpMode {
          */
         //launch(gamepad1.rightBumperWasPressed());
         if (gamepad1.right_bumper) {
+            telemetry.addLine("I'm being pressed..");
+            telemetry.update();
             leftFeeder.setPower(1);
             rightFeeder.setPower(1);
         } else if (gamepad1.left_bumper) {

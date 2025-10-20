@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(5); // weigh robot
+            .mass(7.777); // weigh robot
     public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
 
     public static Follower createFollower(HardwareMap hardwareMap) {
@@ -38,7 +38,6 @@ public class Constants {
             .turnTicksToInches(0.00095635)
             //need to update offsets
             .leftPodY(3.51)
-
             .rightPodY(-3.51)
             .strafePodX(-5)
             .leftEncoder_HardwareMapName("bl") //make sure these names match
