@@ -241,6 +241,7 @@ public class FirstAuto extends OpMode
         telemetry.addData("Press X", "for BLUE");
         telemetry.addData("Press B", "for RED");
         telemetry.addData("Selected Alliance", alliance);
+        telemetry.addData("Press the following buttons to est", "a : GGP, b : GPG, x : PGG");
     }
 
     /*

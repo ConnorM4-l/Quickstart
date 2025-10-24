@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import com.pedropathing.ftc.localization.Encoder;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -11,6 +12,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import java.util.Base64;
 
 /*
  * This file includes a teleop (driver-controlled) file for the goBILDA® StarterBot for the
@@ -40,8 +43,9 @@ public class FirstTeleOp extends OpMode {
      * velocity. Here we are setting the target, and minimum velocity that the launcher should run
      * at. The minimum velocity is a threshold for determining when to fire.
      */
-    final double LAUNCHER_TARGET_VELOCITY = 1125;
-    final double LAUNCHER_MIN_VELOCITY = 1075;
+    double LAUNCHER_TARGET_VELOCITY;
+    double LAUNCHER_MIN_VELOCITY;
+    double LAUNCHER_RELOAD_VELOCITY ;
 
     // Note: pushing stick forward gives negative value
 
@@ -81,15 +85,15 @@ public class FirstTeleOp extends OpMode {
 
     private LaunchState launchState;
 
-    // Setup a variable for each drive wheel to save power level for telemetry
-    double leftPower;
-    double rightPower;
 
     /*
      * Code to run ONCE when the driver hits INIT
      */
     @Override
     public void init() {
+        LAUNCHER_TARGET_VELOCITY = 1500;
+        LAUNCHER_MIN_VELOCITY = 1400;
+        LAUNCHER_RELOAD_VELOCITY = 600;
         launchState = LaunchState.IDLE;
 
         /*
@@ -105,6 +109,7 @@ public class FirstTeleOp extends OpMode {
         leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
 
+
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
          * because the axles point in opposite directions. Pushing the left stick forward
@@ -117,6 +122,7 @@ public class FirstTeleOp extends OpMode {
         br.setDirection(DcMotor.Direction.FORWARD);
         fr.setDirection(DcMotor.Direction.FORWARD);
 
+
         /*
          * Here we set our launcher to the RUN_USING_ENCODER runmode.
          * If you notice that you have no control over the velocity of the motor, it just jumps
@@ -125,7 +131,9 @@ public class FirstTeleOp extends OpMode {
          * through any wiring.
          */
         //launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        launcher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        launcher.setDirection(DcMotorSimple.Direction.FORWARD);
+        launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
 
         /*
          * Setting zeroPowerBehavior to BRAKE enables a "brake mode". This causes the motor to
@@ -155,6 +163,7 @@ public class FirstTeleOp extends OpMode {
          * Tell the driver that initialization is complete.
          */
         telemetry.addData("Status", "Initialized");
+
     }
 
     /*
@@ -190,27 +199,38 @@ public class FirstTeleOp extends OpMode {
          * Here we give the user control of the speed of the launcher motor without automatically
          * queuing a shot.
          */
-        if (gamepad1.y) {
-            //launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
-            launcher.setPower(1);
-        } else if (gamepad1.b) { // stop flywheel
-            //launcher.setVelocity(STOP_SPEED);
-            launcher.setPower(0);
-        }
 
+        if (gamepad1.dpad_down) {
+            LAUNCHER_MIN_VELOCITY -= 10;
+            LAUNCHER_TARGET_VELOCITY -= 10;
+        } else if (gamepad1.dpad_up) {
+            LAUNCHER_MIN_VELOCITY += 10;
+            LAUNCHER_TARGET_VELOCITY += 10;
+        }
+        if (gamepad1.y) {
+            launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
+//            launcher.setPower(1);
+        } else if (gamepad1.b) { // stop flywheel
+            launcher.setVelocity(STOP_SPEED);
+//            launcher.setPower(0);
+        }
+        if (gamepad1.a) {
+            fl.setPower(-0.5);
+            bl.setPower( 0.5);
+            fr.setPower(0.5);
+            br.setPower(-0.5);
+        }
         /*
          * Now we call our "Launch" function.
          */
-        //launch(gamepad1.rightBumperWasPressed());
-        if (gamepad1.right_bumper) {
-            telemetry.addLine("I'm being pressed..");
-            telemetry.update();
-            leftFeeder.setPower(1);
-            rightFeeder.setPower(1);
-        } else if (gamepad1.left_bumper) {
-            leftFeeder.setPower(0);
-            rightFeeder.setPower(0);
-        }
+        launch(gamepad1.rightBumperWasPressed());
+//        if (gamepad1.right_bumper) {
+//            leftFeeder.setPower(1);
+//            rightFeeder.setPower(1);
+//        } else if (gamepad1.left_bumper) {
+//            leftFeeder.setPower(0);
+//            rightFeeder.setPower(0);
+//        }
 
         /*
          * Show the state and motor powers
@@ -218,7 +238,12 @@ public class FirstTeleOp extends OpMode {
         //telemetry.addData("State", launchState);
         //telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
         //telemetry.addData("motorSpeed", launcher.getVelocity());
-
+        telemetry.addData("Launch Power", launcher.getPower());
+//        telemetry.addData("Front left/Right", "%4.2f, %4.2f", frontLeftPower, frontRightPower);
+//        telemetry.addData("Back  left/Right", "%4.2f, %4.2f", backLeftPower, backRightPower);
+        telemetry.addData("launcher Velocity", "%4.2f", -launcher.getVelocity());
+        telemetry.addData("Launcher target velocity", LAUNCHER_TARGET_VELOCITY);
+        telemetry.update();
     }
 
     /*
@@ -227,7 +252,6 @@ public class FirstTeleOp extends OpMode {
     @Override
     public void stop() {
     }
-
     void moveRotateDrive(double axial, double lateral, double yaw) {
         double max;
 
@@ -280,10 +304,6 @@ public class FirstTeleOp extends OpMode {
 
         // Show the elapsed game time and wheel power.
         //telemetry.addData("Status", "Run Time: " + runtime.toString());
-        telemetry.addData("Launch Power", launcher.getPower());
-        telemetry.addData("Front left/Right", "%4.2f, %4.2f", frontLeftPower, frontRightPower);
-        telemetry.addData("Back  left/Right", "%4.2f, %4.2f", backLeftPower, backRightPower);
-        telemetry.update();
     }
 
     void launch(boolean shotRequested) {
@@ -294,8 +314,8 @@ public class FirstTeleOp extends OpMode {
                 }
                 break;
             case SPIN_UP:
-                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
-                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY) {
+                launcher.setVelocity(-LAUNCHER_TARGET_VELOCITY);
+                if (-launcher.getVelocity() > LAUNCHER_MIN_VELOCITY) {
                     launchState = LaunchState.LAUNCH;
                 }
                 break;

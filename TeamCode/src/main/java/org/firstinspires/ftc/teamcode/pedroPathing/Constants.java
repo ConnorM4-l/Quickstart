@@ -12,6 +12,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
+            .forwardZeroPowerAcceleration(-27.574625)
+            .lateralZeroPowerAcceleration(-69.0701)
             .mass(7.777); // weigh robot
     public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
 
@@ -24,6 +26,8 @@ public class Constants {
     }
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
+            .xVelocity(84.16605)
+            .yVelocity(66.921075)
             .rightFrontMotorName("fr") //make sure these names match
             .rightRearMotorName("br")
             .leftRearMotorName("bl")
