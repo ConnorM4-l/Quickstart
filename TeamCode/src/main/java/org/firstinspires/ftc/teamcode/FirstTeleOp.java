@@ -46,6 +46,7 @@ public class FirstTeleOp extends OpMode {
     double LAUNCHER_TARGET_VELOCITY;
     double LAUNCHER_MIN_VELOCITY;
     double LAUNCHER_RELOAD_VELOCITY ;
+    double tpsStep;
 
     // Note: pushing stick forward gives negative value
 
@@ -92,7 +93,7 @@ public class FirstTeleOp extends OpMode {
     @Override
     public void init() {
         LAUNCHER_TARGET_VELOCITY = 1500;
-        LAUNCHER_MIN_VELOCITY = 1400;
+        LAUNCHER_MIN_VELOCITY = 0.90 * LAUNCHER_TARGET_VELOCITY;
         LAUNCHER_RELOAD_VELOCITY = 600;
         launchState = LaunchState.IDLE;
 
@@ -131,7 +132,7 @@ public class FirstTeleOp extends OpMode {
          * through any wiring.
          */
         //launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        launcher.setDirection(DcMotorSimple.Direction.FORWARD);
+        launcher.setDirection(DcMotorSimple.Direction.REVERSE);
         launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
 
@@ -201,12 +202,12 @@ public class FirstTeleOp extends OpMode {
          */
 
         if (gamepad1.dpad_down) {
-            LAUNCHER_MIN_VELOCITY -= 10;
-            LAUNCHER_TARGET_VELOCITY -= 10;
+            LAUNCHER_TARGET_VELOCITY = Math.max(0, LAUNCHER_TARGET_VELOCITY - tpsStep);
         } else if (gamepad1.dpad_up) {
-            LAUNCHER_MIN_VELOCITY += 10;
-            LAUNCHER_TARGET_VELOCITY += 10;
+            LAUNCHER_TARGET_VELOCITY += tpsStep;
         }
+        LAUNCHER_MIN_VELOCITY = 0.90 * LAUNCHER_TARGET_VELOCITY;
+
         if (gamepad1.y) {
             launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
 //            launcher.setPower(1);
@@ -241,7 +242,7 @@ public class FirstTeleOp extends OpMode {
         telemetry.addData("Launch Power", launcher.getPower());
 //        telemetry.addData("Front left/Right", "%4.2f, %4.2f", frontLeftPower, frontRightPower);
 //        telemetry.addData("Back  left/Right", "%4.2f, %4.2f", backLeftPower, backRightPower);
-        telemetry.addData("launcher Velocity", "%4.2f", -launcher.getVelocity());
+        telemetry.addData("launcher Velocity", "%4.2f", launcher.getVelocity());
         telemetry.addData("Launcher target velocity", LAUNCHER_TARGET_VELOCITY);
         telemetry.update();
     }
@@ -314,8 +315,8 @@ public class FirstTeleOp extends OpMode {
                 }
                 break;
             case SPIN_UP:
-                launcher.setVelocity(-LAUNCHER_TARGET_VELOCITY);
-                if (-launcher.getVelocity() > LAUNCHER_MIN_VELOCITY) {
+                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
+                if (Math.abs(launcher.getVelocity()) > LAUNCHER_MIN_VELOCITY) {
                     launchState = LaunchState.LAUNCH;
                 }
                 break;
