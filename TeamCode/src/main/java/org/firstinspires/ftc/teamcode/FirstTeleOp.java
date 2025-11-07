@@ -46,7 +46,7 @@ public class FirstTeleOp extends OpMode {
     double LAUNCHER_TARGET_VELOCITY;
     double LAUNCHER_MIN_VELOCITY;
     double LAUNCHER_RELOAD_VELOCITY ;
-    double tpsStep;
+    double tpsStep = 10;
 
     // Note: pushing stick forward gives negative value
 
@@ -198,7 +198,7 @@ public class FirstTeleOp extends OpMode {
         moveRotateDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
         /*
          * Here we give the user control of the speed of the launcher motor without automatically
-         * queuing a shot.
+         * queuing a shot.\\\\\\\\\\\\\\
          */
 
         if (gamepad1.dpad_down) {
