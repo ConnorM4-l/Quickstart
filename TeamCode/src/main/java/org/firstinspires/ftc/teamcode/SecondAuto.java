@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.pedropathing.ftc.localization.Encoder;
+import com.pedropathing.follower.Follower;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -8,10 +9,11 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
-@TeleOp(name = "SecondTeleOp")
-public class SecondTeleOp extends OpMode {
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
+public class SecondAuto extends LinearOpMode {
     private DcMotor bl = null;
     private DcMotor fl = null;
     private DcMotor br = null;
@@ -24,10 +26,23 @@ public class SecondTeleOp extends OpMode {
     private Drivetrain movementController;
 
     private boolean shotPressed = false;
-    private double launcherVelocity = 2700;
+    private double launcherVelocity = 3500;
+
+    ElapsedTime autoTimer = new ElapsedTime();
+    double autoTime = 0;
+
+    private enum AutoState {
+        SHOOT,
+        MOVEBACK,
+        MOVELEFT;
+    }
+
+    AutoState autoState = AutoState.SHOOT;
+
+    private Follower follower;
 
     @Override
-    public void init() {
+    public void runOpMode() throws InterruptedException {
         bl = hardwareMap.get(DcMotor.class, "bl");
         fl = hardwareMap.get(DcMotor.class, "fl");
         br = hardwareMap.get(DcMotor.class, "br");
@@ -50,16 +65,39 @@ public class SecondTeleOp extends OpMode {
         launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         shotController = new TripleShot(hardwareMap);
-        movementController = new Drivetrain(hardwareMap);
+
+        autoTimer.reset();
+
+
+        switch (autoState) {
+            case SHOOT:
+                shotController.update(true, false, launcherVelocity);
+
+                autoTime = autoTimer.seconds();
+                if (autoTime > 1) {
+                    shotController.update(true, true, launcherVelocity);
+                    autoTimer.reset();
+                    autoState = AutoState.MOVEBACK;
+                }
+            case MOVEBACK:
+                setAllPower(-1);
+                if (autoTime > 1) {
+                    autoState = AutoState.MOVELEFT;
+                }
+            case MOVELEFT:
+                bl.setPower(1);
+                br.setPower(-1);
+                fr.setPower(1);
+                fl.setPower(-1);
+                if (autoTime > 1) {
+                    setAllPower(0);
+                }
+        }
     }
-
-    @Override
-    public void loop() {
-        shotController.update(gamepad1.right_bumper, gamepad1.left_bumper, launcherVelocity);
-        movementController.update(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-
-        telemetry.addData("Error", shotController.getErr());
-        telemetry.addData("Launch State", shotController.getLaunchingState());
-        telemetry.update();
+    private void setAllPower(double pow) {
+        bl.setPower(pow);
+        br.setPower(pow);
+        fr.setPower(pow);
+        fl.setPower(pow);
     }
 }
