@@ -1,19 +1,16 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.pedropathing.follower.Follower;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
-
-public class SecondAuto extends LinearOpMode {
+@Autonomous(name = "SecondAutoRed")
+public class SecondAutoRed extends LinearOpMode {
     private DcMotor bl = null;
     private DcMotor fl = null;
     private DcMotor br = null;
@@ -26,7 +23,7 @@ public class SecondAuto extends LinearOpMode {
     private Drivetrain movementController;
 
     private boolean shotPressed = false;
-    private double launcherVelocity = 3500;
+    private double launcherVelocity = 2650;
 
     ElapsedTime autoTimer = new ElapsedTime();
     double autoTime = 0;
@@ -34,7 +31,8 @@ public class SecondAuto extends LinearOpMode {
     private enum AutoState {
         SHOOT,
         MOVEBACK,
-        MOVELEFT;
+        MOVERIGHT,
+        IDLE;
     }
 
     AutoState autoState = AutoState.SHOOT;
@@ -43,6 +41,7 @@ public class SecondAuto extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
+
         bl = hardwareMap.get(DcMotor.class, "bl");
         fl = hardwareMap.get(DcMotor.class, "fl");
         br = hardwareMap.get(DcMotor.class, "br");
@@ -66,32 +65,48 @@ public class SecondAuto extends LinearOpMode {
 
         shotController = new TripleShot(hardwareMap);
 
+
+
+        waitForStart();
         autoTimer.reset();
 
+        while(opModeIsActive()) {
+            switch (autoState) {
+                case SHOOT:
+                    shotController.update(true, false, launcherVelocity);
+                    autoTime = autoTimer.seconds();
 
-        switch (autoState) {
-            case SHOOT:
-                shotController.update(true, false, launcherVelocity);
-
-                autoTime = autoTimer.seconds();
-                if (autoTime > 1) {
-                    shotController.update(true, true, launcherVelocity);
-                    autoTimer.reset();
-                    autoState = AutoState.MOVEBACK;
-                }
-            case MOVEBACK:
-                setAllPower(-1);
-                if (autoTime > 1) {
-                    autoState = AutoState.MOVELEFT;
-                }
-            case MOVELEFT:
-                bl.setPower(1);
-                br.setPower(-1);
-                fr.setPower(1);
-                fl.setPower(-1);
-                if (autoTime > 1) {
+                    if (autoTime > 5) {
+                        shotController.update(false, true, launcherVelocity);
+                        autoTimer.reset();
+                        autoState = AutoState.MOVEBACK;
+                    }
+                    break;
+                case MOVEBACK:
+                    autoTime = autoTimer.seconds();
+                    setAllPower(-.5);
+                    if (autoTime > 1) {
+                        autoTimer.reset();
+                        autoState = AutoState.MOVERIGHT;
+                    }
+                    break;
+                case MOVERIGHT:
+                    autoTime = autoTimer.seconds();
+                    bl.setPower(-.5);
+                    br.setPower(.5);
+                    fr.setPower(-.5);
+                    fl.setPower(.5);
+                    if (autoTime > 1) {
+                        autoState = AutoState.IDLE;
+                    }
+                    break;
+                case IDLE:
                     setAllPower(0);
-                }
+                    break;
+            }
+            telemetry.addData("LaunchState", autoState);
+            telemetry.addData("AutoTime", autoTime);
+            telemetry.update();
         }
     }
     private void setAllPower(double pow) {
