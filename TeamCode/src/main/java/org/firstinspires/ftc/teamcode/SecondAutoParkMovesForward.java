@@ -9,8 +9,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-@Autonomous(name = "SecondAutoBlue")
-public class SecondAutoBlue extends LinearOpMode {
+@Autonomous(name = "SecondAutoParkMovesForward")
+public class SecondAutoParkMovesForward extends LinearOpMode {
     private DcMotor bl = null;
     private DcMotor fl = null;
     private DcMotor br = null;
@@ -29,13 +29,11 @@ public class SecondAutoBlue extends LinearOpMode {
     double autoTime = 0;
 
     private enum AutoState {
-        SHOOT,
-        MOVEBACK,
-        MOVELEFT,
+        MOVEFORWARD,
         IDLE;
     }
 
-    AutoState autoState = AutoState.SHOOT;
+    AutoState autoState = AutoState.MOVEFORWARD;
 
     private Follower follower;
 
@@ -72,31 +70,11 @@ public class SecondAutoBlue extends LinearOpMode {
 
         while(opModeIsActive()) {
             switch (autoState) {
-                case SHOOT:
-                    shotController.update(true, false, launcherVelocity);
+                case MOVEFORWARD:
                     autoTime = autoTimer.seconds();
-
-                    if (autoTime > 5) {
-                        shotController.update(false, true, launcherVelocity);
+                    setAllPower(.5);
+                    if (autoTime > .3) {
                         autoTimer.reset();
-                        autoState = AutoState.MOVEBACK;
-                    }
-                    break;
-                case MOVEBACK:
-                    autoTime = autoTimer.seconds();
-                    setAllPower(-.5);
-                    if (autoTime > 0.8) {
-                        autoTimer.reset();
-                        autoState = AutoState.MOVELEFT;
-                    }
-                    break;
-                case MOVELEFT:
-                    autoTime = autoTimer.seconds();
-                    bl.setPower(.5);
-                    br.setPower(-.5);
-                    fr.setPower(.5);
-                    fl.setPower(-.5);
-                    if (autoTime > 1.1) {
                         autoState = AutoState.IDLE;
                     }
                     break;

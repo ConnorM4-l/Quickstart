@@ -58,8 +58,16 @@ public class SecondTeleOp extends OpMode {
         shotController.update(gamepad1.right_bumper, gamepad1.left_bumper, launcherVelocity);
         movementController.update(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
 
+        if (gamepad1.dpad_up) {
+            launcherVelocity += 10;
+        }
+        if (gamepad1.dpad_down) {
+            launcherVelocity -= 10;
+        }
+
         telemetry.addData("Error", shotController.getErr());
         telemetry.addData("Launch State", shotController.getLaunchingState());
+        telemetry.addData("Target Velocity", launcherVelocity);
         telemetry.update();
     }
 }
