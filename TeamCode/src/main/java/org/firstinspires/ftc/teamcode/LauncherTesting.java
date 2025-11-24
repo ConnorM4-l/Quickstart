@@ -27,6 +27,7 @@ public class LauncherTesting extends OpMode {
     private boolean shotPressed = false;
     public static double launcherTargetVelocity = 3500;
     public static boolean launch = false;
+    public static boolean stop = false;
     private int hasShot = 500;
 
     @Override
@@ -43,7 +44,7 @@ public class LauncherTesting extends OpMode {
 
     @Override
     public void loop() {
-        shotController.update(launch, gamepad1.left_bumper, launcherTargetVelocity);
+        shotController.update(launch, stop, launcherTargetVelocity);
 
         if (shotController.getHasShot()) {
             hasShot = 1000;

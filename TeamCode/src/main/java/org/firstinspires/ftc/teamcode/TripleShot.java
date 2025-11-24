@@ -28,7 +28,7 @@ public class TripleShot {
     private double acceleration = 0;
 
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
-    public static double FULL_SPEED = 1.0;
+    public static double FULL_SPEED = 0.15;
 
     double accTime = 0;
 
