@@ -35,6 +35,7 @@ public class ShootNoSort {
     public void update(double velocityRequested, boolean shotRequested, double timeShot, double timeBetween) {
         launcher.update(velocityRequested);
         launcherTime = launcherTimer.seconds();
+
         switch (launchingState) {
             case SPIN:
                 feed.update(false, false);

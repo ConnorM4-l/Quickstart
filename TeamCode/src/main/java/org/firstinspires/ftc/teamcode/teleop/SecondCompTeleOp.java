@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.teamcode.Coordinate;
+import org.firstinspires.ftc.teamcode.util.Coordinate;
 
 @TeleOp(name = "SecondTeleOp")
 public class SecondCompTeleOp extends OpMode {

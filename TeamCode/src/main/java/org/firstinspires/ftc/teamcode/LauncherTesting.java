@@ -13,10 +13,9 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.teamcode.subsystem.TripleShot;
 import org.firstinspires.ftc.teamcode.subsystem.drivetrain;
-import org.firstinspires.ftc.teamcode.subsystem.flywheel;
 import org.firstinspires.ftc.teamcode.subsystem.limelight;
+import org.firstinspires.ftc.teamcode.util.Coordinate;
 import org.firstinspires.ftc.teamcode.util.VelocitySolver;
 
 @Configurable
@@ -80,7 +79,7 @@ public class LauncherTesting extends OpMode {
 
     @Override
     public void loop() {
-        shotController.update(velocitySolver.getVelocity(visionController.getDistance()), true, 1, 0.5);
+        shotController.update(distanceVelocityMultiple * visionController.getDistance(), true, 1, 0.5);
 
         telemetryM.addData("Error", shotController.getErr());
         telemetryM.addData("Launcher target velocity", velocitySolver.getVelocity(visionController.getDistance()));

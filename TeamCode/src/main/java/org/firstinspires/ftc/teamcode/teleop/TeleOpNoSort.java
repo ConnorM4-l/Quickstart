@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import com.pedropathing.ftc.localization.Encoder;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -9,7 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 
-import org.firstinspires.ftc.teamcode.Coordinate;
+import org.firstinspires.ftc.teamcode.util.Coordinate;
 import org.firstinspires.ftc.teamcode.ShootNoSort;
 import org.firstinspires.ftc.teamcode.subsystem.limelight;
 import org.firstinspires.ftc.teamcode.subsystem.drivetrain;
@@ -27,6 +28,10 @@ public class TeleOpNoSort extends OpMode {
     private CRServo rightFeeder = null;
     private Limelight3A limelight = null;
     private IMU imu = null;
+    private Encoder leftOdom = null;
+    private Encoder rightodom = null;
+    private Encoder strafeOdom = null;
+
 
     private ShootNoSort shotController;
     private drivetrain movementController;
@@ -49,6 +54,13 @@ public class TeleOpNoSort extends OpMode {
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         imu = hardwareMap.get(IMU.class, "imu");
+
+        leftOdom = hardwareMap.get(DcMotor.class, "fl");
+        rightodom = hardwareMap.get(DcMotor.class, "fr");
+        strafeOdom = hardwareMap.get(DcMotor.class, "br");
+
+
+
 
         bl.setDirection(DcMotor.Direction.REVERSE);
         fl.setDirection(DcMotor.Direction.REVERSE);
