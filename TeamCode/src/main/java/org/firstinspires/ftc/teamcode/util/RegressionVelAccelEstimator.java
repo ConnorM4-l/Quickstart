@@ -1,6 +1,4 @@
-package org.firstinspires.ftc.teamcode;
-
-import org.firstinspires.ftc.teamcode.QuadraticRegression;
+package org.firstinspires.ftc.teamcode.util;
 
 public class RegressionVelAccelEstimator {
     private final double sampleSize;

@@ -1,16 +1,16 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.subsystem;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.ftc.localization.Encoder;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.teamcode.util.VelocityPIDController;
 
 @Configurable
 public class TripleShot {
@@ -44,19 +44,21 @@ public class TripleShot {
     }
     LaunchingState launchingState = LaunchingState.IDLE;
 
-    private DcMotorEx launcher;
+    private DcMotorEx leftLauncher;
+    private DcMotorEx rightLauncher;
     private Encoder launcherEncoder;
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
 
     public TripleShot(HardwareMap hardwareMap) {
-        launcher = hardwareMap.get(DcMotorEx.class,"launcher");
-        leftFeeder = hardwareMap.get(CRServo.class,"left_feeder");
-        rightFeeder = hardwareMap.get(CRServo.class,"right_feeder");
+        leftLauncher = hardwareMap.get(DcMotorEx.class,"leftLauncher");
+        rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
+        leftFeeder = hardwareMap.get(CRServo.class,"leftFeeder");
+        rightFeeder = hardwareMap.get(CRServo.class,"rightFeeder");
 
-        launcherEncoder = new Encoder(launcher);
+        launcherEncoder = new Encoder(leftLauncher);
 
-        launcher.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
         launcherEncoder.setDirection(Encoder.REVERSE);
 
         leftFeeder.setPower(STOP_SPEED);
@@ -131,7 +133,7 @@ public class TripleShot {
     }
 
     private void setPower() {
-        launcher.setPower(launcherController.update(LAUNCHER_TARGET_VELOCITY, launcherEncoder.getDeltaPosition() * 60.0 / 28));
+        leftLauncher.setPower(launcherController.update(LAUNCHER_TARGET_VELOCITY, launcherEncoder.getDeltaPosition() * 60.0 / 28));
     }
 
     private boolean hasShot() {

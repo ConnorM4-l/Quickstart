@@ -1,15 +1,15 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.subsystem;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-public class Drivetrain {
+public class drivetrain {
     private DcMotor bl = null;
     private DcMotor fl = null;
     private DcMotor br = null;
     private DcMotor fr = null;
 
-    public Drivetrain(HardwareMap hardwareMap) {
+    public drivetrain(HardwareMap hardwareMap) {
         bl = hardwareMap.get(DcMotor.class, "bl");
         fl = hardwareMap.get(DcMotor.class, "fl");
         br = hardwareMap.get(DcMotor.class, "br");

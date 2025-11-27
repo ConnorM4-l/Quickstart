@@ -9,6 +9,9 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.subsystem.drivetrain;
+import org.firstinspires.ftc.teamcode.subsystem.TripleShot;
+
 @Autonomous(name = "SecondAutoRed")
 public class SecondAutoRed extends LinearOpMode {
     private DcMotor bl = null;
@@ -20,7 +23,7 @@ public class SecondAutoRed extends LinearOpMode {
     private CRServo rightFeeder = null;
 
     private TripleShot shotController;
-    private Drivetrain movementController;
+    private drivetrain movementController;
 
     private boolean shotPressed = false;
     private double launcherVelocity = 2650;

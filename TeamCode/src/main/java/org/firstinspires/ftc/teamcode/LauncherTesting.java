@@ -3,14 +3,15 @@ package org.firstinspires.ftc.teamcode;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
-import com.pedropathing.ftc.localization.Encoder;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.HardwareMap;
+
+import org.firstinspires.ftc.teamcode.subsystem.TripleShot;
+import org.firstinspires.ftc.teamcode.subsystem.flywheel;
 
 @Configurable
 @TeleOp(name = "Launcher Testing")
@@ -22,7 +23,7 @@ public class LauncherTesting extends OpMode {
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
 
-    private TripleShot shotController;
+    private flywheel flywheelController;
 
     private boolean shotPressed = false;
     public static double launcherTargetVelocity = 3500;
@@ -39,26 +40,17 @@ public class LauncherTesting extends OpMode {
         launcher.setDirection(DcMotorSimple.Direction.REVERSE);
         launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        shotController = new TripleShot(hardwareMap);
+        flywheelController = new flywheel(hardwareMap);
     }
 
     @Override
     public void loop() {
-        shotController.update(launch, stop, launcherTargetVelocity);
+        flywheelController.update(launcherTargetVelocity);
 
-        if (shotController.getHasShot()) {
-            hasShot = 1000;
-        } else {
-            hasShot = 500;
-        }
-
-        telemetryM.addData("Count Shots Fired", shotController.getCountShots());
-        telemetryM.addData("Error", shotController.getErr());
-        telemetryM.addData("Launch State", shotController.getLaunchingState());
+        telemetryM.addData("Error", flywheelController.getErr());
         telemetryM.addData("Launcher target velocity", launcherTargetVelocity);
-        telemetryM.addData("Launcher velocity", shotController.getVelocity());
-        telemetryM.addData("Launcher Acceleration", shotController.getAcceleration());
-        telemetryM.addData("Has shot?", hasShot);
+        telemetryM.addData("Launcher velocity", flywheelController.getVelocity());
+        telemetryM.addData("Launcher Acceleration", flywheelController.getAcceleration());
         telemetryM.update();
     }
 }
