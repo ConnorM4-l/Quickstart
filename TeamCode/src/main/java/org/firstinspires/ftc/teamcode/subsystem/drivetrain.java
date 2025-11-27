@@ -65,8 +65,8 @@ public class drivetrain {
     }
     public void updateLocation(Double strafeDist)
     {
-        location.incermentX( strafeDist * Math.cos(angle) );
-        location.incermentY( strafeDist * Math.sin(angle) );
+        location.incermentX(strafeDist * Math.cos(angle));
+        location.incermentY(strafeDist * Math.sin(angle));
     }
 
     public void update(double axial, double lateral, double yaw) {
@@ -125,9 +125,9 @@ public class drivetrain {
 
     public Boolean isFacingTower(Coordinate towerPoint)
     {
-        return (location.getAngle(towerPoint,angle) < 0.1);
+        return (location.getAngle(towerPoint, angle) < 0.1);
     }
-    public void updateFacingPoint(double axial, double lateral, Coordinate point,double curAngle, double angVel) {
+    public void updateFacingPoint(double axial, double lateral, Coordinate point, double curAngle, double angVel) {
         double max;
         double currentTime = driveClock.seconds();
         angle = curAngle;

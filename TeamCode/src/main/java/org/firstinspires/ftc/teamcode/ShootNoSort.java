@@ -80,4 +80,16 @@ public class ShootNoSort {
                 break;
         }
     }
+
+    public double getErr() {
+        return launcher.getErr();
+    }
+
+    public double getVelocity() {
+        return launcher.getVelocity();
+    }
+
+    public double getAcceleration() {
+        return launcher.getAcceleration();
+    }
 }

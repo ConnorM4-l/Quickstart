@@ -7,7 +7,9 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.IMU;
 
+import org.firstinspires.ftc.teamcode.Coordinate;
 import org.firstinspires.ftc.teamcode.ShootNoSort;
 import org.firstinspires.ftc.teamcode.subsystem.limelight;
 import org.firstinspires.ftc.teamcode.subsystem.drivetrain;
@@ -24,6 +26,7 @@ public class TeleOpNoSort extends OpMode {
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
     private Limelight3A limelight = null;
+    private IMU imu = null;
 
     private ShootNoSort shotController;
     private drivetrain movementController;
@@ -31,6 +34,8 @@ public class TeleOpNoSort extends OpMode {
     private VelocitySolver velocitySolver;
 
     private double launcherInitVelocity = 2700;
+
+    private Coordinate location = new Coordinate(67.0, 67.0);
 
     @Override
     public void init() {
@@ -43,6 +48,7 @@ public class TeleOpNoSort extends OpMode {
         leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        imu = hardwareMap.get(IMU.class, "imu");
 
         bl.setDirection(DcMotor.Direction.REVERSE);
         fl.setDirection(DcMotor.Direction.REVERSE);
@@ -58,15 +64,26 @@ public class TeleOpNoSort extends OpMode {
         rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
 
         shotController = new ShootNoSort(hardwareMap);
-        movementController = new drivetrain(hardwareMap);
+        movementController = new drivetrain(hardwareMap, location);
         visionController = new limelight(hardwareMap, true);
     }
     @Override
     public void loop() {
         visionController.update();
+        movementController.updateLocation(leftOdom.getDistance);
 
         if (gamepad1.rightBumperWasPressed()) {
-            shotController.update(velocitySolver.getVelocity(visionController.getDistance()), true, 1, 0.5);
+            if (movementController.isFacingTower(visionController.getCoordinate())) {
+                shotController.update(velocitySolver.getVelocity(visionController.getDistance()), true, 1, 0.5);
+            } else {
+                shotController.update(velocitySolver.getVelocity(visionController.getDistance()), false, 1, 0.5);
+            }
+            movementController.updateFacingPoint(-gamepad1.left_stick_y, gamepad1.left_stick_x, visionController.getCoordinate(), visionController.getHeading(), 0);
+        } else {
+            movementController.update(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+            shotController.update(launcherInitVelocity, false, 1, 0.5);
         }
     }
+
+
 }

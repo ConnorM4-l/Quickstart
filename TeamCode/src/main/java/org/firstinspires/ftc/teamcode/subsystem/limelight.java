@@ -9,6 +9,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.Coordinate;
 
 public class limelight {
     private Limelight3A limelight = null;
@@ -23,13 +24,14 @@ public class limelight {
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
         limelight.start();
+
+        //0 means it uses april tags
         limelight.pipelineSwitch(0);
 
         alliance = all;
     }
 
     public void update() {
-
         LLResult latestResult = limelight.getLatestResult();
 
 
@@ -45,6 +47,7 @@ public class limelight {
         y = p.y * 39.3701;
         heading = rpy.getYaw(AngleUnit.RADIANS);
 
+        //add these values to get the coordinates with respect to the goal
         if (alliance) {
             x -= 67;
             y += 67;
@@ -62,6 +65,15 @@ public class limelight {
     public Pose getPose() {
         return new Pose(x, y, heading);
     }
+
+    public Coordinate getCoordinate() {
+        return new Coordinate(x, y);
+    }
+
+    public double getHeading() {
+        return heading;
+    }
+
     public double getDistance() {
         return Math.sqrt(x * x + y * y);
     }
