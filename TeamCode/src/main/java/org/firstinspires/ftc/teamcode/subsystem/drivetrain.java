@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
+import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
+
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
@@ -126,6 +129,9 @@ public class drivetrain {
     public Boolean isFacingTower(Coordinate towerPoint)
     {
         return (location.getAngle(towerPoint, angle) < 0.1);
+    }
+    public void turnTowardsGoal(double axial, double lateral) {
+        follower.turnTo(Math.toDegrees(angle));
     }
     public void updateFacingPoint(double axial, double lateral, Coordinate point, double curAngle, double angVel) {
         double max;

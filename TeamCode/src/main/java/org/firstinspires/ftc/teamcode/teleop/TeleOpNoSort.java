@@ -1,6 +1,12 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
+
+import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.ftc.localization.Encoder;
+import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.PedroCoordinates;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -10,6 +16,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.util.Coordinate;
 import org.firstinspires.ftc.teamcode.ShootNoSort;
 import org.firstinspires.ftc.teamcode.subsystem.limelight;
@@ -40,7 +47,10 @@ public class TeleOpNoSort extends OpMode {
 
     private double launcherInitVelocity = 2700;
 
-    private Coordinate location = new Coordinate(67.0, 67.0);
+    private double desiredHeading = 3.14 / 2;
+
+    private boolean following = false;
+    private final Pose TARGET_LOCATION = new Pose(67, 67, 45);
 
     @Override
     public void init() {
@@ -54,11 +64,6 @@ public class TeleOpNoSort extends OpMode {
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         imu = hardwareMap.get(IMU.class, "imu");
-
-        leftOdom = hardwareMap.get(DcMotor.class, "fl");
-        rightodom = hardwareMap.get(DcMotor.class, "fr");
-        strafeOdom = hardwareMap.get(DcMotor.class, "br");
-
 
 
 
@@ -75,14 +80,19 @@ public class TeleOpNoSort extends OpMode {
         leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
         rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
 
+        follower = Constants.createFollower(hardwareMap);
+        follower.setStartingPose(new Pose());
+
         shotController = new ShootNoSort(hardwareMap);
-        movementController = new drivetrain(hardwareMap, location);
+        movementController = new drivetrain(hardwareMap);
         visionController = new limelight(hardwareMap, true);
     }
     @Override
     public void loop() {
+        follower.update();
         visionController.update();
-        movementController.updateLocation(leftOdom.getDistance);
+
+        desiredHeading = visionController.getDesiredHeading();
 
         if (gamepad1.rightBumperWasPressed()) {
             if (movementController.isFacingTower(visionController.getCoordinate())) {
@@ -90,12 +100,28 @@ public class TeleOpNoSort extends OpMode {
             } else {
                 shotController.update(velocitySolver.getVelocity(visionController.getDistance()), false, 1, 0.5);
             }
-            movementController.updateFacingPoint(-gamepad1.left_stick_y, gamepad1.left_stick_x, visionController.getCoordinate(), visionController.getHeading(), 0);
+            if (!following) {
+//                follower.followPath(
+//                        follower.pathBuilder()
+//                                .addPath(new BezierLine(follower.getPose(), TARGET_LOCATION))
+//                                .setLinearHeadingInterpolation(follower.getHeading(), TARGET_LOCATION.minus(follower.getPose()).getAsVector().getTheta())
+//                                .build()
+//                );
+                follower.turnToDegrees(visionController.getDesiredHeading());
+            }
         } else {
             movementController.update(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
             shotController.update(launcherInitVelocity, false, 1, 0.5);
         }
+        follower.setPose(getRobotPoseFromCamera());
+
+        if (following && !follower.isBusy()) following = false;
     }
 
-
+    private Pose getRobotPoseFromCamera() {
+        //Fill this out to get the robot Pose from the camera's output (apply any filters if you need to using follower.getPose() for fusion)
+        //Pedro Pathing has built-in KalmanFilter and LowPassFilter classes you can use for this
+        //Use this to convert standard FTC coordinates to standard Pedro Pathing coordinates
+        return new Pose(0, 0, 0, FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
+    }
 }

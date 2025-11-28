@@ -77,4 +77,8 @@ public class limelight {
     public double getDistance() {
         return Math.sqrt(x * x + y * y);
     }
+
+    public double getDesiredHeading() {
+        return Math.toDegrees(Math.atan2(y + 67, x + 67));
+    }
 }
