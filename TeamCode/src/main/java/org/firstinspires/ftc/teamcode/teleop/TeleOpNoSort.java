@@ -4,7 +4,6 @@ import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.ftc.localization.Encoder;
-import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -17,8 +16,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.util.Coordinate;
-import org.firstinspires.ftc.teamcode.ShootNoSort;
+import org.firstinspires.ftc.teamcode.subsystem.Outtake;
 import org.firstinspires.ftc.teamcode.subsystem.limelight;
 import org.firstinspires.ftc.teamcode.subsystem.drivetrain;
 import org.firstinspires.ftc.teamcode.util.VelocitySolver;
@@ -40,7 +38,7 @@ public class TeleOpNoSort extends OpMode {
     private Encoder strafeOdom = null;
 
 
-    private ShootNoSort shotController;
+    private Outtake shotController;
     private drivetrain movementController;
     private limelight visionController;
     private VelocitySolver velocitySolver;
@@ -66,7 +64,6 @@ public class TeleOpNoSort extends OpMode {
         imu = hardwareMap.get(IMU.class, "imu");
 
 
-
         bl.setDirection(DcMotor.Direction.REVERSE);
         fl.setDirection(DcMotor.Direction.REVERSE);
         br.setDirection(DcMotor.Direction.FORWARD);
@@ -83,7 +80,7 @@ public class TeleOpNoSort extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(new Pose());
 
-        shotController = new ShootNoSort(hardwareMap);
+        shotController = new Outtake(hardwareMap, 0.5, 0.5);
         movementController = new drivetrain(hardwareMap);
         visionController = new limelight(hardwareMap, true);
     }

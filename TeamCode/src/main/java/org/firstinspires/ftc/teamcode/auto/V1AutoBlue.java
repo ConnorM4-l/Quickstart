@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.auto;
 
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -12,8 +12,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.subsystem.drivetrain;
 import org.firstinspires.ftc.teamcode.subsystem.TripleShot;
 
-@Autonomous(name = "SecondAutoRed")
-public class SecondAutoRed extends LinearOpMode {
+@Autonomous(name = "SecondAutoBlue")
+public class V1AutoBlue extends LinearOpMode {
     private DcMotor bl = null;
     private DcMotor fl = null;
     private DcMotor br = null;
@@ -34,7 +34,7 @@ public class SecondAutoRed extends LinearOpMode {
     private enum AutoState {
         SHOOT,
         MOVEBACK,
-        MOVERIGHT,
+        MOVELEFT,
         IDLE;
     }
 
@@ -88,18 +88,18 @@ public class SecondAutoRed extends LinearOpMode {
                 case MOVEBACK:
                     autoTime = autoTimer.seconds();
                     setAllPower(-.5);
-                    if (autoTime > 1) {
+                    if (autoTime > 0.8) {
                         autoTimer.reset();
-                        autoState = AutoState.MOVERIGHT;
+                        autoState = AutoState.MOVELEFT;
                     }
                     break;
-                case MOVERIGHT:
+                case MOVELEFT:
                     autoTime = autoTimer.seconds();
-                    bl.setPower(-.5);
-                    br.setPower(.5);
-                    fr.setPower(-.5);
-                    fl.setPower(.5);
-                    if (autoTime > 1) {
+                    bl.setPower(.5);
+                    br.setPower(-.5);
+                    fr.setPower(.5);
+                    fl.setPower(-.5);
+                    if (autoTime > 1.1) {
                         autoState = AutoState.IDLE;
                     }
                     break;

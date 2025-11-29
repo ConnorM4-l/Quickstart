@@ -1,4 +1,4 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
-public class FullLM2TeleOp {
+public class V2TeleOpBlue {
 }

@@ -1,18 +1,18 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.subsystem;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.subsystem.feeders;
-import org.firstinspires.ftc.teamcode.subsystem.flywheel;
-
-public class ShootNoSort {
+public class Outtake {
     ElapsedTime launcherTimer = new ElapsedTime();
 
     private flywheel launcher;
     private feeders feed;
 
     private double launcherTime = 0;
+
+    private double timeShot;
+    private double timeBetween;
 
     private enum LaunchingState {
         SPIN,
@@ -25,21 +25,27 @@ public class ShootNoSort {
 
     LaunchingState launchingState = LaunchingState.SPIN;
 
-    public ShootNoSort(HardwareMap hardwareMap) {
+    public Outtake(HardwareMap hardwareMap, double tShot, double tBetween) {
         launcher = new flywheel(hardwareMap);
         feed = new feeders(hardwareMap);
 
         launcherTimer.reset();
+
+        timeShot = tShot;
+        timeBetween = tBetween;
     }
 
     public void update(double velocityRequested, boolean shotRequested, double timeShot, double timeBetween) {
         launcher.update(velocityRequested);
         launcherTime = launcherTimer.seconds();
 
+
+    }
+    public void LRRShoot(boolean aligned) {
         switch (launchingState) {
             case SPIN:
                 feed.update(false, false);
-                if (shotRequested) {
+                if (aligned) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.SHOOT1;
                 }
@@ -53,7 +59,7 @@ public class ShootNoSort {
                 break;
             case BREAK1:
                 feed.update(false, false);
-                if (launcherTime > timeBetween) {
+                if (launcherTime > timeBetween && aligned) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.SHOOT2;
                 }
@@ -67,7 +73,7 @@ public class ShootNoSort {
                 break;
             case BREAK2:
                 feed.update(false, false);
-                if (launcherTime > timeBetween) {
+                if (launcherTime > timeBetween && aligned) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.SHOOT2;
                 }
