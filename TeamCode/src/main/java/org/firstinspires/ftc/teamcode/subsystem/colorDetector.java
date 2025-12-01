@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystem;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-import org.firstinspires.ftc.teamcode.ColorDetector;
+//import org.firstinspires.ftc.teamcode.ColorDetector;
 
 public class colorDetector {
     private ColorSensor colorSee = null;
@@ -12,7 +12,7 @@ public class colorDetector {
         colorSee = hardwareMap.get(ColorSensor.class, "colorDetector");
     }
 
-    public update() {
-
+    public void update() {
+        int isGreen = colorSee.green();
     }
 }

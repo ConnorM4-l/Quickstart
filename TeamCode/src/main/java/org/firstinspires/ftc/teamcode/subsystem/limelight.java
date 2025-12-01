@@ -1,11 +1,14 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
+import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
@@ -80,5 +83,22 @@ public class limelight {
 
     public double getDesiredHeading() {
         return Math.toDegrees(Math.atan2(y + 67, x + 67));
+    }
+
+    Pose getCamPose() {
+        if (limelight.getLatestResult() != null) {
+            Pose3D botpose = limelight.getLatestResult().getBotpose_MT2();
+            Pose3D botpose2 = limelight.getLatestResult().getBotpose();
+
+            Position poseIn = botpose.getPosition().toUnit(DistanceUnit.INCH);
+
+            Pose limelightPose = new Pose(poseIn.x, poseIn.y, botpose2.getOrientation().getYaw());
+            Pose pedroPose = new Pose(limelightPose.getX(), limelightPose.getY(), limelightPose.getHeading(), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
+
+
+            return pedroPose;
+        } else {
+            return new Pose();
+        }
     }
 }

@@ -34,9 +34,9 @@ public class drivetrain {
         fl = hardwareMap.get(DcMotor.class, "fl");
         br = hardwareMap.get(DcMotor.class, "br");
         fr = hardwareMap.get(DcMotor.class, "fr");
-        leftOdo = hardwareMap.get(DcMotor.class, "leftOdo");
-        rightOdo = hardwareMap.get(DcMotor.class, "rightOdo");
-        strafeOdo = hardwareMap.get(DcMotor.class, "strafeOdo");
+//        leftOdo = hardwareMap.get(DcMotor.class, "leftOdo");
+//        rightOdo = hardwareMap.get(DcMotor.class, "rightOdo");
+//        strafeOdo = hardwareMap.get(DcMotor.class, "strafeOdo");
         imu = hardwareMap.get(IMU.class, "imu");
         location = new Coordinate();
         angle = 0.0;
