@@ -28,16 +28,17 @@ public class RegressionVelAccelEstimator {
         reset();
     }
 
-    public void update(double curPos) {
-        positions[curIndex] = curPos;
-        times[curIndex] = ((double) System.nanoTime()) / 1e9;
+    public void update(double velocity) {
+//        positions[curIndex] = curPos;
+//        times[curIndex] = ((double) System.nanoTime()) / 1e9;
 
         prevVel = vel;
 
         //Calculating new vals
         double[] regressionVals = QuadraticRegression.calc(times, positions);
 
-        vel = 2 * regressionVals[0] * times[curIndex] + regressionVals[1];
+//        vel = 2 * regressionVals[0] * times[curIndex] + regressionVals[1];
+        vel = velocity;
 
         if (!Double.isFinite(vel)) {
             vel = 0;

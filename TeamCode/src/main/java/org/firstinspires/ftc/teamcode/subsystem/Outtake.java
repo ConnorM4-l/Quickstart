@@ -16,7 +16,7 @@ public class Outtake {
 
     private double launcherTime = 0;
 
-
+    private boolean stillShooting = true;
 
     private enum LaunchingState {
         SPIN,
@@ -43,10 +43,10 @@ public class Outtake {
         timeBetween = tBetween;
     }
 
-    public void update(double distanceFromGoal, double timeShot, double timeBetween) {
+    public void update(double distanceFromGoal) {
         double velocityRequested = velocitySolver.getVelocity(distanceFromGoal);
 
-        launcher.update(velocityRequested);
+        launcher.update(distanceFromGoal);
         launcherTime = launcherTimer.seconds();
     }
     public void shootLeft() {
@@ -55,52 +55,53 @@ public class Outtake {
     public void shootRight() {
         feed.update(false, true);
     }
-    public void shootBoth() {
-        feed.update(true, true);
-    }
-    public boolean LRRShoot(boolean aligned) {
+    public void shootBoth() { feed.update(true, true); }
+    public void noShoot() { feed.update(false, false); }
+
+    public void LRRShoot(boolean aligned) {
         switch (launchingState) {
             case SPIN:
-                feed.update(false, false);
+                noShoot();
                 if (aligned) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.SHOOT1;
                 }
+                stillShooting = true;
                 break;
             case SHOOT1:
-                feed.update(true, false);
+                shootLeft();
                 if (launcherTime > timeShot) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.BREAK1;
                 }
                 break;
             case BREAK1:
-                feed.update(false, false);
+                noShoot();
                 if (launcherTime > timeBetween && aligned) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.SHOOT3;
                 }
                 break;
             case SHOOT2:
-                feed.update(false, true);
+                shootRight();
                 if (launcherTime > timeShot) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.BREAK2;
                 }
                 break;
             case BREAK2:
-                feed.update(false, false);
+                noShoot();
                 if (launcherTime > timeBetween && aligned) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.SHOOT2;
                 }
                 break;
             case SHOOT3:
-                feed.update(false, true);
+                shootRight();
                 if (launcherTime > timeShot) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.SPIN;
-                    return true;
+                    stillShooting = false;
                 }
                 break;
         }
@@ -109,6 +110,12 @@ public class Outtake {
     public double getErr() {
         return launcher.getErr();
     }
+
+    public boolean isStillShooting() {
+        return stillShooting;
+    }
+
+//    public void setLRR
 
     public double getVelocity() {
         return launcher.getVelocity();

@@ -46,6 +46,10 @@ public class V2TeleOpBlue extends OpMode {
     private boolean following = false;
     private boolean intaking = false;
 
+    private boolean shootingLRR = false;
+    private boolean shootingRLR = false;
+    private boolean shootingRRL = false;
+
     @Override
     public void init() {
         follower = Constants.createFollower(hardwareMap);
@@ -104,8 +108,16 @@ public class V2TeleOpBlue extends OpMode {
         shotController.update(distanceFromGoal(), 1, 0.5);
         if (following) {
             follower.turnTo(desiredHeading());
-            if (isAligned() && gamepad1.dpad_left) {
-                shotController.LRRShoot(true);
+            if (gamepad1.dpad_left) {
+                shootingLRR = true;
+            }
+            if (shootingLRR) {
+                while (shotController.isStillShooting()) {
+                    shotController.LRRShoot(isAligned());
+                }
+            }
+            if (shotController.isStillShooting()) {
+                shotController.LRRShoot(isAligned());
             } else if (isAligned() && gamepad1.dpad_up){
                 shotController.shootLeft();
             }

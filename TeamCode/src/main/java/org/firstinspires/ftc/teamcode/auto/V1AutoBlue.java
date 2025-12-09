@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.subsystem.Outtake;
 import org.firstinspires.ftc.teamcode.subsystem.drivetrain;
 import org.firstinspires.ftc.teamcode.subsystem.TripleShot;
 
@@ -22,7 +23,7 @@ public class V1AutoBlue extends LinearOpMode {
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
 
-    private TripleShot shotController;
+    private Outtake shotController;
     private drivetrain movementController;
 
     private boolean shotPressed = false;
@@ -38,7 +39,7 @@ public class V1AutoBlue extends LinearOpMode {
         IDLE;
     }
 
-    AutoState autoState = AutoState.SHOOT;
+    AutoState autoState = AutoState.MOVEBACK;
 
     private Follower follower;
 
@@ -66,7 +67,7 @@ public class V1AutoBlue extends LinearOpMode {
         launcher.setDirection(DcMotorSimple.Direction.REVERSE);
         launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        shotController = new TripleShot(hardwareMap);
+        shotController = new Outtake(hardwareMap, 1, 1);
 
 
 
@@ -75,21 +76,23 @@ public class V1AutoBlue extends LinearOpMode {
 
         while(opModeIsActive()) {
             switch (autoState) {
-                case SHOOT:
-                    shotController.update(true, false, launcherVelocity);
-                    autoTime = autoTimer.seconds();
-
-                    if (autoTime > 5) {
-                        shotController.update(false, true, launcherVelocity);
-                        autoTimer.reset();
-                        autoState = AutoState.MOVEBACK;
-                    }
-                    break;
                 case MOVEBACK:
                     autoTime = autoTimer.seconds();
                     setAllPower(-.5);
                     if (autoTime > 0.8) {
                         autoTimer.reset();
+                        autoState = AutoState.SHOOT;
+                    }
+                    break;
+                case SHOOT:
+                    shotController.update(launcherVelocity);
+                    autoTime = autoTimer.seconds();
+
+                    if (autoTime > 1) {
+                        shotController.shootLeft();
+                    } else if (autoTime > 2) {
+                        shotController.shootRight();
+                    } else if (autoTime > 4) {
                         autoState = AutoState.MOVELEFT;
                     }
                     break;
