@@ -15,38 +15,37 @@ import org.firstinspires.ftc.teamcode.subsystem.limelight;
 
 @TeleOp(name = "AimTesting")
 public class AimTesting extends OpMode {
-    private Limelight3A limelight = null;
-    private limelight visionController;
 
     private TelemetryManager telemetryM;
 
     private boolean automatedDrive = false;
 
+    private Pose targetPose = new Pose(-67, -67, 0);
+
+    private double targetHeading = 0;
+
+
     @Override
     public void init() {
         telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(new Pose(67, 67, Math.toRadians(45)));
-
-        visionController = new limelight(hardwareMap, true);
     }
 
     @Override
     public void start() {
-        limelight.start();
         follower.startTeleopDrive();
     }
 
     @Override
     public void loop() {
         follower.update();
-        visionController.update();
 
+        targetHeading = desiredHeading();
 
         if (automatedDrive) {
-            follower.turnToDegrees(visionController.getDesiredHeading());
+            follower.turnToDegrees(targetHeading);
         }
         follower.setTeleOpDrive(
                 -gamepad1.left_stick_y,
@@ -54,14 +53,26 @@ public class AimTesting extends OpMode {
                 -gamepad1.right_stick_x,
                 true // Robot Centric (false for field centric)
         );
-        if (gamepad1.rightBumperWasPressed()) {
+        if (gamepad1.right_bumper) {
             automatedDrive = true;
-        } else if (gamepad1.leftBumperWasPressed()) {
+        } else if (gamepad1.left_bumper) {
             automatedDrive = false;
         }
 
         telemetryM.debug("position", follower.getPose());
         telemetryM.debug("velocity", follower.getVelocity());
         telemetryM.debug("automatedDrive", automatedDrive);
+        telemetryM.debug("is aligned", isAligned());
+        telemetryM.debug("distance from goal", distanceFromGoal());
+        telemetryM.debug("target heading", targetHeading);
+    }
+    public double desiredHeading() {
+        return Math.toDegrees(Math.atan2(targetPose.getY() - follower.getPose().getY(), targetPose.getX()) - follower.getPose().getX());
+    }
+    public double distanceFromGoal() {
+        return Math.sqrt(Math.pow(targetPose.getX() - follower.getPose().getX(), 2) + Math.pow(targetPose.getY() - follower.getPose().getY(), 2));
+    }
+    public boolean isAligned() {
+        return Math.abs(follower.getHeading() - targetHeading) < 0.1;
     }
 }

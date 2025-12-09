@@ -93,9 +93,9 @@ public class TeleOpNoSort extends OpMode {
 
         if (gamepad1.rightBumperWasPressed()) {
             if (movementController.isFacingTower(visionController.getCoordinate())) {
-                shotController.update(velocitySolver.getVelocity(visionController.getDistance()), true, 1, 0.5);
+                shotController.update(velocitySolver.getVelocity(visionController.getDistance()), 1, 0.5);
             } else {
-                shotController.update(velocitySolver.getVelocity(visionController.getDistance()), false, 1, 0.5);
+                shotController.update(velocitySolver.getVelocity(visionController.getDistance()), 1, 0.5);
             }
             if (!following) {
 //                follower.followPath(
@@ -108,7 +108,7 @@ public class TeleOpNoSort extends OpMode {
             }
         } else {
             movementController.update(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-            shotController.update(launcherInitVelocity, false, 1, 0.5);
+            shotController.update(launcherInitVelocity, 1, 0.5);
         }
         follower.setPose(getRobotPoseFromCamera());
 

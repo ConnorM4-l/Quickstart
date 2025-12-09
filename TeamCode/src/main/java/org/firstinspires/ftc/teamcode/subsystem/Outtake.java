@@ -1,18 +1,22 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.util.VelocitySolver;
+
+@Configurable
 public class Outtake {
     ElapsedTime launcherTimer = new ElapsedTime();
 
     private flywheel launcher;
     private feeders feed;
+    private VelocitySolver velocitySolver;
 
     private double launcherTime = 0;
 
-    private double timeShot;
-    private double timeBetween;
+
 
     private enum LaunchingState {
         SPIN,
@@ -22,6 +26,8 @@ public class Outtake {
         BREAK2,
         SHOOT3;
     }
+    public static double timeShot;
+    public static double timeBetween;
 
     LaunchingState launchingState = LaunchingState.SPIN;
 
@@ -29,19 +35,30 @@ public class Outtake {
         launcher = new flywheel(hardwareMap);
         feed = new feeders(hardwareMap);
 
+        velocitySolver = new VelocitySolver();
+
         launcherTimer.reset();
 
         timeShot = tShot;
         timeBetween = tBetween;
     }
 
-    public void update(double velocityRequested, boolean shotRequested, double timeShot, double timeBetween) {
+    public void update(double distanceFromGoal, double timeShot, double timeBetween) {
+        double velocityRequested = velocitySolver.getVelocity(distanceFromGoal);
+
         launcher.update(velocityRequested);
         launcherTime = launcherTimer.seconds();
-
-
     }
-    public void LRRShoot(boolean aligned) {
+    public void shootLeft() {
+        feed.update(true, false);
+    }
+    public void shootRight() {
+        feed.update(false, true);
+    }
+    public void shootBoth() {
+        feed.update(true, true);
+    }
+    public boolean LRRShoot(boolean aligned) {
         switch (launchingState) {
             case SPIN:
                 feed.update(false, false);
@@ -61,7 +78,7 @@ public class Outtake {
                 feed.update(false, false);
                 if (launcherTime > timeBetween && aligned) {
                     launcherTimer.reset();
-                    launchingState = LaunchingState.SHOOT2;
+                    launchingState = LaunchingState.SHOOT3;
                 }
                 break;
             case SHOOT2:
@@ -83,6 +100,7 @@ public class Outtake {
                 if (launcherTime > timeShot) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.SPIN;
+                    return true;
                 }
                 break;
         }

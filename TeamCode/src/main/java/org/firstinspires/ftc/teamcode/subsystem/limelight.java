@@ -19,6 +19,7 @@ public class limelight {
     private double x;
     private double y;
     private double heading;
+    private LLResult latestResult;
 
     //alliance should be true for blue
     private boolean alliance;
@@ -35,7 +36,7 @@ public class limelight {
     }
 
     public void update() {
-        LLResult latestResult = limelight.getLatestResult();
+        latestResult = limelight.getLatestResult();
 
 
         // get the botpose (pose3d)
@@ -60,9 +61,7 @@ public class limelight {
         }
 
         if (!latestResult.isValid()) {
-            x = 0;
-            y = 0;
-            heading = 0;
+            latestResult = null;
         }
     }
     public Pose getPose() {
@@ -86,7 +85,7 @@ public class limelight {
     }
 
     Pose getCamPose() {
-        if (limelight.getLatestResult() != null) {
+        if (latestResult != null) {
             Pose3D botpose = limelight.getLatestResult().getBotpose_MT2();
             Pose3D botpose2 = limelight.getLatestResult().getBotpose();
 
@@ -101,4 +100,8 @@ public class limelight {
             return new Pose();
         }
     }
+
+//    public int getMotifAprilTag() {
+//        limelight.get
+//    }
 }

@@ -1,10 +1,16 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
+@Configurable
 public class gate {
     private Servo sGate = null;
+
+    public static double leftPosition = 0.4;
+    public static double rightPosition = 0.55;
+
 
     public gate(HardwareMap hardwareMap) {
         sGate = hardwareMap.get(Servo.class, "sGate");
@@ -12,9 +18,9 @@ public class gate {
 
     public void update(boolean beLeft) {
         if (beLeft) {
-            sGate.setPosition(0.2);
+            sGate.setPosition(leftPosition);
         } else {
-            sGate.setPosition(0.7);
+            sGate.setPosition(rightPosition);
         }
     }
 }

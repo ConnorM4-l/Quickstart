@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class feeders {
@@ -10,6 +11,8 @@ public class feeders {
     public feeders(HardwareMap hardwareMap) {
         leftFeeder = hardwareMap.get(CRServo.class, "leftFeeder");
         rightFeeder = hardwareMap.get(CRServo.class, "rightFeeder");
+        rightFeeder.setDirection(DcMotorSimple.Direction.FORWARD);
+        leftFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     public void update(boolean left, boolean right) {
