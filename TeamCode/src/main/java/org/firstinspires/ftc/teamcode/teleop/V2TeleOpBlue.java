@@ -26,7 +26,7 @@ Make the driver be able to change heading by a little bit
 @TeleOp
 public class V2TeleOpBlue extends OpMode {
     private Follower follower;
-    public static Pose startingPose; //See ExampleAuto to understand how to use this
+    private Pose startingPose = new Pose(8, 8, 0); //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
 
     private DcMotorEx leftLauncher = null;
@@ -40,8 +40,9 @@ public class V2TeleOpBlue extends OpMode {
     private Intake intakeController;
 
     private double offsetHeading = 0;
-    private Pose targetPose = new Pose(-67, -67, 0);
+    private Pose targetPose = new Pose(5, 67, 0);
     private double targetHeading = 0;
+    private double offsetShotHeading = 0;
 
     private boolean following = false;
     private boolean intaking = false;
@@ -50,10 +51,12 @@ public class V2TeleOpBlue extends OpMode {
     private boolean shootingRLR = false;
     private boolean shootingRRL = false;
 
+    private double targetVelocity = 1500;
+
     @Override
     public void init() {
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(V2TeleOpBlue.startingPose == null ? new Pose() : V2TeleOpBlue.startingPose);
+        follower.setStartingPose(startingPose);
         follower.update();
 
         leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
@@ -65,7 +68,7 @@ public class V2TeleOpBlue extends OpMode {
         intake = hardwareMap.get(DcMotorSimple.class, "intakeMotor");
 
         intakeController = new Intake(hardwareMap);
-        shotController = new Outtake(hardwareMap, 0.5, 0.5);
+        shotController = new Outtake(hardwareMap);
     }
 
     @Override
@@ -80,48 +83,61 @@ public class V2TeleOpBlue extends OpMode {
     public void loop() {
         //Call this once per loop
         follower.update();
+        shotController.update(targetVelocity);
+        //shotController.update(distanceFromGoal());
 
         follower.setTeleOpDrive(
                 -gamepad1.left_stick_y,
                 -gamepad1.left_stick_x,
                 -gamepad1.right_stick_x,
-                true, // Robot Centric),
-                offsetHeading);
+                true); // Robot Centric)
         if (gamepad1.a) {
-            intaking = true;
-        } else if (gamepad1.b) {
-            intaking = false;
-        }
-        if (intaking) {
             intakeController.spin(1);
+        } else if (gamepad1.b) {
+            intakeController.spin(0);
         }
+
         if (gamepad1.dpad_right) {
             intakeController.gateRight();
         } else if (gamepad1.dpad_left) {
             intakeController.gateLeft();
         }
-        if (gamepad1.xWasPressed()) {
-            following = true;
+
+        if (gamepad1.x) {
+            follower.turnTo(Math.toRadians(135 + offsetShotHeading));
         } else if (gamepad1.yWasPressed()) {
-            following = false;
+            //maybe somehow turn off that following
         }
-        shotController.update(distanceFromGoal(), 1, 0.5);
-        if (following) {
-            follower.turnTo(desiredHeading());
-            if (gamepad1.dpad_left) {
-                shootingLRR = true;
-            }
-            if (shootingLRR) {
-                while (shotController.isStillShooting()) {
-                    shotController.LRRShoot(isAligned());
-                }
-            }
-            if (shotController.isStillShooting()) {
-                shotController.LRRShoot(isAligned());
-            } else if (isAligned() && gamepad1.dpad_up){
-                shotController.shootLeft();
-            }
+
+        if (gamepad2.xWasPressed()) {
+            targetVelocity = 1650;
+        } else if (gamepad2.yWasPressed()) {
+            targetVelocity = 1500;
+        } else if (gamepad2.aWasPressed()) {
+            targetVelocity = 1250;
+        } else if (gamepad2.bWasPressed()) {
+            targetVelocity = 1000;
         }
+
+        if (gamepad1.left_bumper) {
+            offsetShotHeading -= 1;
+        } else if (gamepad1.right_bumper) {
+            offsetShotHeading += 1;
+        }
+
+        if (gamepad2.right_bumper && gamepad2.left_bumper) {
+            shotController.shootBoth();
+        } else if (gamepad2.left_bumper) {
+            shotController.shootLeft();
+        } else if (gamepad2.right_bumper) {
+            shotController.shootRight();
+        } else {
+            shotController.noShoot();
+        }
+
+        telemetry.addData("target velocity", targetVelocity);
+        telemetry.addData("offsetShotHeading", offsetShotHeading);
+        telemetry.update();
     }
 
     public double desiredHeading() {

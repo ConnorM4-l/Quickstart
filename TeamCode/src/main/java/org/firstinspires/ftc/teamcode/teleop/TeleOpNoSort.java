@@ -80,7 +80,7 @@ public class TeleOpNoSort extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(new Pose());
 
-        shotController = new Outtake(hardwareMap, 0.5, 0.5);
+        shotController = new Outtake(hardwareMap);
         movementController = new drivetrain(hardwareMap);
         visionController = new limelight(hardwareMap, true);
     }
@@ -91,25 +91,25 @@ public class TeleOpNoSort extends OpMode {
 
         desiredHeading = visionController.getDesiredHeading();
 
-        if (gamepad1.rightBumperWasPressed()) {
-            if (movementController.isFacingTower(visionController.getCoordinate())) {
-                shotController.update(velocitySolver.getVelocity(visionController.getDistance()), 1, 0.5);
-            } else {
-                shotController.update(velocitySolver.getVelocity(visionController.getDistance()), 1, 0.5);
-            }
-            if (!following) {
-//                follower.followPath(
-//                        follower.pathBuilder()
-//                                .addPath(new BezierLine(follower.getPose(), TARGET_LOCATION))
-//                                .setLinearHeadingInterpolation(follower.getHeading(), TARGET_LOCATION.minus(follower.getPose()).getAsVector().getTheta())
-//                                .build()
-//                );
-                follower.turnToDegrees(visionController.getDesiredHeading());
-            }
-        } else {
-            movementController.update(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-            shotController.update(launcherInitVelocity, 1, 0.5);
-        }
+//        if (gamepad1.rightBumperWasPressed()) {
+//            if (movementController.isFacingTower(visionController.getCoordinate())) {
+//                shotController.update(velocitySolver.getVelocity(visionController.getDistance()), 1, 0.5);
+//            } else {
+//                shotController.update(velocitySolver.getVelocity(visionController.getDistance()), 1, 0.5);
+//            }
+//            if (!following) {
+////                follower.followPath(
+////                        follower.pathBuilder()
+////                                .addPath(new BezierLine(follower.getPose(), TARGET_LOCATION))
+////                                .setLinearHeadingInterpolation(follower.getHeading(), TARGET_LOCATION.minus(follower.getPose()).getAsVector().getTheta())
+////                                .build()
+////                );
+//                follower.turnToDegrees(visionController.getDesiredHeading());
+//            }
+//        } else {
+//            movementController.update(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+//            shotController.update(launcherInitVelocity, 1, 0.5);
+//        }
         follower.setPose(getRobotPoseFromCamera());
 
         if (following && !follower.isBusy()) following = false;

@@ -31,16 +31,13 @@ public class Outtake {
 
     LaunchingState launchingState = LaunchingState.SPIN;
 
-    public Outtake(HardwareMap hardwareMap, double tShot, double tBetween) {
+    public Outtake(HardwareMap hardwareMap) {
         launcher = new flywheel(hardwareMap);
         feed = new feeders(hardwareMap);
 
         velocitySolver = new VelocitySolver();
 
         launcherTimer.reset();
-
-        timeShot = tShot;
-        timeBetween = tBetween;
     }
 
     public void update(double distanceFromGoal) {
@@ -70,6 +67,7 @@ public class Outtake {
                 break;
             case SHOOT1:
                 shootLeft();
+                launcherTime = launcherTimer.seconds();
                 if (launcherTime > timeShot) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.BREAK1;
@@ -77,6 +75,7 @@ public class Outtake {
                 break;
             case BREAK1:
                 noShoot();
+                launcherTime = launcherTimer.seconds();
                 if (launcherTime > timeBetween && aligned) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.SHOOT3;
@@ -84,6 +83,7 @@ public class Outtake {
                 break;
             case SHOOT2:
                 shootRight();
+                launcherTime = launcherTimer.seconds();
                 if (launcherTime > timeShot) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.BREAK2;
@@ -91,6 +91,7 @@ public class Outtake {
                 break;
             case BREAK2:
                 noShoot();
+                launcherTime = launcherTimer.seconds();
                 if (launcherTime > timeBetween && aligned) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.SHOOT2;
@@ -98,6 +99,7 @@ public class Outtake {
                 break;
             case SHOOT3:
                 shootRight();
+                launcherTime = launcherTimer.seconds();
                 if (launcherTime > timeShot) {
                     launcherTimer.reset();
                     launchingState = LaunchingState.SPIN;

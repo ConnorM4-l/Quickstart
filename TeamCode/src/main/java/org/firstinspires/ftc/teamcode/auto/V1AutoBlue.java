@@ -67,7 +67,7 @@ public class V1AutoBlue extends LinearOpMode {
         launcher.setDirection(DcMotorSimple.Direction.REVERSE);
         launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        shotController = new Outtake(hardwareMap, 1, 1);
+        shotController = new Outtake(hardwareMap);
 
 
 

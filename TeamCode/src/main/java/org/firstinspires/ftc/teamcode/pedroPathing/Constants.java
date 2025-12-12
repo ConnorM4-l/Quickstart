@@ -46,9 +46,9 @@ public class Constants {
             .useBrakeModeInTeleOp(true);
     public static TwoWheelConstants localizerConstants = new TwoWheelConstants()
             .forwardEncoder_HardwareMapName("fr")
-            .forwardPodY(6.168740157)
+            .forwardPodY(-6.168740157)
             .strafeEncoder_HardwareMapName("fl")
-            .strafePodX(-7.55906)
+            .strafePodX(7.55906)
             .strafeEncoderDirection(Encoder.REVERSE)
             .IMU_HardwareMapName("imu")
             .IMU_Orientation(

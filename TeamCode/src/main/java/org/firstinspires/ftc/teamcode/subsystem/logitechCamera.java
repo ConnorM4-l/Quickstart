@@ -19,8 +19,9 @@ public class logitechCamera {
     private VisionPortal visionPortal;
     private ArrayList<AprilTagDetection> detectedTags = new ArrayList<AprilTagDetection>();
 
-    public logitechCamera(WebcamName cam)
+    public logitechCamera(HardwareMap hm)
     {
+        WebcamName cam = hm.get(WebcamName.class, "Webcam1");
         aprilTagProcessor = new AprilTagProcessor.Builder().setDrawTagID(true).setDrawTagOutline(true).setDrawAxes(true).setDrawCubeProjection(true).setOutputUnits(DistanceUnit.CM, AngleUnit.RADIANS).build();
 
         VisionPortal.Builder builder = new VisionPortal.Builder();

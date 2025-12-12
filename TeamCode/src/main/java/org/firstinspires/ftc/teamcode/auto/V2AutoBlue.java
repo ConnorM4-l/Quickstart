@@ -1,127 +1,196 @@
 package org.firstinspires.ftc.teamcode.auto;
 
+import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.pedropathing.util.Timer;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
-public class V2AutoBlue {
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.subsystem.Intake;
+import org.firstinspires.ftc.teamcode.subsystem.Outtake;
+import org.firstinspires.ftc.teamcode.subsystem.logitechCamera;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
-    public static class Paths {
+public class V2AutoBlue extends OpMode {
+    PathChain Path1;
+    PathChain Path2;
+    PathChain Path3;
+    PathChain Path4;
+    PathChain Path5;
 
-        public PathChain Path1;
-        public PathChain Path2;
-        public PathChain Path3;
-        public PathChain Path4;
-        public PathChain Path5;
-        public PathChain Path6;
-        public PathChain Path7;
-        public PathChain Path8;
-        public PathChain Path9;
-        public PathChain Path10;
-        public PathChain Path11;
+    private Timer pathTimer;
+    private Timer opmodeTimer;
+    private logitechCamera cam;
+    private int tagID;
 
-        public Paths(Follower follower) {
-            Path1 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(22.018, 122.716), new Pose(46.239, 98.789))
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(135), Math.toRadians(180))
-                    .build();
+    private Pose startPose = new Pose(33.61467889908257, 134.60550458715596, Math.toRadians(90));
 
-            Path2 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierCurve(
-                                    new Pose(46.239, 98.789),
-                                    new Pose(47.706, 85.431),
-                                    new Pose(41.688, 84.000)
-                            )
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
-                    .build();
+    private DcMotorEx leftLauncher = null;
+    private DcMotorEx rightLauncher = null;
+    private CRServo leftFeeder = null;
+    private CRServo rightFeeder = null;
+    private Servo sGate = null;
+    private DcMotorSimple intake = null;
 
-            Path3 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(41.688, 84.000), new Pose(13.945, 84.000))
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
-                    .build();
+    private Outtake shotController;
+    private Intake intakeController;
 
-            Path4 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(13.945, 84.000), new Pose(50.642, 84.000))
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(135))
-                    .build();
 
-            Path5 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierCurve(
-                                    new Pose(50.642, 84.000),
-                                    new Pose(48.734, 67.229),
-                                    new Pose(36.404, 60.000)
-                            )
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(135), Math.toRadians(180))
-                    .build();
+    @Override
+    public void init() {
+        tagID = -1;
+        cam = new logitechCamera(hardwareMap);
+        pathTimer = new Timer();
+        opmodeTimer = new Timer();
+        opmodeTimer.resetTimer();
+        follower = Constants.createFollower(hardwareMap);
+        buildPaths();
+        follower.setStartingPose(startPose);
 
-            Path6 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(36.404, 60.000), new Pose(15.266, 60.000))
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
-                    .build();
+        leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
+        rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
+        leftFeeder = hardwareMap.get(CRServo.class, "leftFeeder");
+        rightFeeder = hardwareMap.get(CRServo.class, "rightFeeder");
+        sGate = hardwareMap.get(Servo.class, "sGate");
 
-            Path7 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(15.266, 60.000), new Pose(57.101, 78.972))
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(135))
-                    .build();
+        intake = hardwareMap.get(DcMotorSimple.class, "intakeMotor");
 
-            Path8 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierCurve(
-                                    new Pose(57.101, 78.972),
-                                    new Pose(46.532, 34.936),
-                                    new Pose(34.936, 36.000)
-                            )
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(135), Math.toRadians(180))
-                    .build();
+        intakeController = new Intake(hardwareMap);
+        shotController = new Outtake(hardwareMap);
 
-            Path9 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(34.936, 36.000), new Pose(14.972, 36.000))
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
-                    .build();
+        intakeController.gateRight();
+    }
 
-            Path10 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(14.972, 36.000), new Pose(57.101, 78.972))
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(135))
-                    .build();
+    @Override
+    public void loop() {
+        autonomousPathUpdate();
+        shotController.update(1250);
+    }
 
-            Path11 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(57.101, 78.972), new Pose(48.000, 71.339))
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(135), Math.toRadians(180))
-                    .build();
+    public void buildPaths() {
+        Path1 = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(new Pose(33.615, 134.606), new Pose(63.266, 84.000))
+                )
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(135))
+                .build();
+
+        Path2 = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(new Pose(63.266, 84.000), new Pose(40.807, 84.000))
+                )
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                .build();
+
+        Path3 = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(new Pose(40.807, 84.000), new Pose(35.817, 84.000))
+                )
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                .build();
+
+        Path4 = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(new Pose(35.817, 84.000), new Pose(16.000, 84.000))
+                )
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                .build();
+
+        Path5 = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(new Pose(16.000, 84.000), new Pose(63.266, 84.000))
+                )
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(135))
+                .build();
+        }
+        int pathState = 0;
+
+        public void autonomousPathUpdate() {
+            switch (pathState) {
+                case 0:
+                    follower.followPath(Path1);
+                    pathTimer.resetTimer();
+                    pathState = 1;
+                    break;
+                case 1:
+
+            /* You could check for
+            - Follower State: "if(!follower.isBusy()) {}"
+            - Time: "if(pathTimer.getElapsedTimeSeconds() > 1) {}"
+            - Robot Position: "if(follower.getPose().getX() > 36) {}"
+            */      if (tagID == -1) {
+                        cam.update();
+                        for (AprilTagDetection a : cam.getDetectedTags())
+                            if (a != null && (a.id >= 21 && a.id <= 23)) {
+                                tagID = a.id;
+                                break;
+                            }
+                    }
+                    /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
+                    if (shotController.isStillShooting()) {
+                        shotController.LRRShoot(true);
+                    } else {
+                        /* Score Preload */
+
+                        /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
+                        follower.followPath(Path2, true);
+                        setPathState(2);
+                    }
+                    break;
+                case 2:
+                    /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup1Pose's position */
+                    if(!follower.isBusy()) {
+                        /* Grab Sample */
+
+                        /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
+
+                        intakeController.spin(1);
+                        follower.followPath(Path3, 0.5, true);
+                        setPathState(3);
+                    }
+                    break;
+                case 3:
+                    /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
+                    if(!follower.isBusy()) {
+                        /* Score Sample */
+
+                        /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
+                        intakeController.gateLeft();
+                        follower.followPath(Path4, 0.5, true);
+                        intakeController.spin(0);
+                        setPathState(4);
+                    }
+                    break;
+                case 4:
+                    /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup2Pose's position */
+                    if(!follower.isBusy()) {
+                        /* Grab Sample */
+
+                        /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
+                        follower.followPath(Path5,true);
+                        setPathState(5);
+                    }
+                    break;
+            }
+        }
+
+        /** These change the states of the paths and actions. It will also reset the timers of the individual switches **/
+        public void setPathState(int pState) {
+            pathState = pState;
+            pathTimer.resetTimer();
         }
     }
-}

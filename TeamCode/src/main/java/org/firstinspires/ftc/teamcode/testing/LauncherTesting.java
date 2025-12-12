@@ -38,9 +38,6 @@ public class LauncherTesting extends OpMode {
     public static boolean shootRight = false;
     public static boolean shootBoth = false;
 
-    public static double timeShot = 1;
-    public static double timeBetween = 0.5;
-
     @Override
     public void init() {
         leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
@@ -49,7 +46,10 @@ public class LauncherTesting extends OpMode {
         leftFeeder = hardwareMap.get(CRServo.class, "leftFeeder");
         rightFeeder = hardwareMap.get(CRServo.class, "rightFeeder");
 
-        shotController = new Outtake(hardwareMap, timeShot, timeBetween);
+        leftLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        shotController = new Outtake(hardwareMap);
         //movementController = new drivetrain(hardwareMap, location);
         //visionController = new limelight(hardwareMap, true);
     }
@@ -57,11 +57,13 @@ public class LauncherTesting extends OpMode {
     @Override
     public void loop() {
         //shotController.update(distanceVelocityMultiple * visionController.getDistance(), true, 1, 0.5);
-        shotController.update(launcherInitVelocity,1, 0.5);
+        shotController.update(launcherInitVelocity);
 
         if (shootBoth) {
             shotController.shootBoth();
         }
+
+        //1250 for corner
 
 
         telemetryM.addData("Error", shotController.getErr());
