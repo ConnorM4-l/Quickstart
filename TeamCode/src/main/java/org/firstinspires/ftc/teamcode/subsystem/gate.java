@@ -8,8 +8,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 public class gate {
     private Servo sGate = null;
 
-    public static double leftPosition = 0.4;
-    public static double rightPosition = 0.55;
+    public static double leftPosition = 0.37;
+    public static double rightPosition = 0.66;
 
 
     public gate(HardwareMap hardwareMap) {

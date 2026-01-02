@@ -9,25 +9,28 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.subsystem.Intake;
 import org.firstinspires.ftc.teamcode.subsystem.Outtake;
 import org.firstinspires.ftc.teamcode.subsystem.drivetrain;
 import org.firstinspires.ftc.teamcode.subsystem.TripleShot;
 
-@Autonomous(name = "SecondAutoBlue")
+@Autonomous(name = "AutoBlue3B")
 public class V1AutoBlue extends LinearOpMode {
     private DcMotor bl = null;
     private DcMotor fl = null;
     private DcMotor br = null;
     private DcMotor fr = null;
-    private DcMotorEx launcher = null;
+    private DcMotorEx leftLauncher = null;
+    private DcMotorEx rightLauncher = null;
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
+    private DcMotorSimple intake = null;
 
     private Outtake shotController;
     private drivetrain movementController;
 
     private boolean shotPressed = false;
-    private double launcherVelocity = 2650;
+    private double launcherVelocity = 1250;
 
     ElapsedTime autoTimer = new ElapsedTime();
     double autoTime = 0;
@@ -35,24 +38,31 @@ public class V1AutoBlue extends LinearOpMode {
     private enum AutoState {
         SHOOT,
         MOVEBACK,
-        MOVELEFT,
+        MOVERIGHT,
         IDLE;
     }
 
     AutoState autoState = AutoState.MOVEBACK;
+
+    private Intake intakeController;
 
     private Follower follower;
 
     @Override
     public void runOpMode() throws InterruptedException {
 
+
+
         bl = hardwareMap.get(DcMotor.class, "bl");
         fl = hardwareMap.get(DcMotor.class, "fl");
         br = hardwareMap.get(DcMotor.class, "br");
         fr = hardwareMap.get(DcMotor.class, "fr");
-        launcher = hardwareMap.get(DcMotorEx.class, "launcher");
-        leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
-        rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
+        leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
+        rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
+        leftFeeder = hardwareMap.get(CRServo.class, "leftFeeder");
+        rightFeeder = hardwareMap.get(CRServo.class, "rightFeeder");
+
+        intake = hardwareMap.get(DcMotorSimple.class, "intakeMotor");
 
         bl.setDirection(DcMotor.Direction.REVERSE);
         fl.setDirection(DcMotor.Direction.REVERSE);
@@ -64,39 +74,43 @@ public class V1AutoBlue extends LinearOpMode {
         br.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         fr.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        launcher.setDirection(DcMotorSimple.Direction.REVERSE);
-        launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
 
         shotController = new Outtake(hardwareMap);
-
-
+        intakeController = new Intake(hardwareMap);
 
         waitForStart();
         autoTimer.reset();
 
         while(opModeIsActive()) {
+            shotController.update(launcherVelocity);
             switch (autoState) {
                 case MOVEBACK:
                     autoTime = autoTimer.seconds();
                     setAllPower(-.5);
-                    if (autoTime > 0.8) {
+                    if (autoTime > 2) {
                         autoTimer.reset();
                         autoState = AutoState.SHOOT;
                     }
                     break;
                 case SHOOT:
-                    shotController.update(launcherVelocity);
                     autoTime = autoTimer.seconds();
 
-                    if (autoTime > 1) {
+                    setAllPower(0);
+
+                    if (autoTime < 2) {
                         shotController.shootLeft();
-                    } else if (autoTime > 2) {
+                    } else if (autoTime < 6) {
                         shotController.shootRight();
-                    } else if (autoTime > 4) {
-                        autoState = AutoState.MOVELEFT;
+                        intakeController.spin(1);
+                    } else if (autoTime > 6) {
+                        intakeController.spin(0);
+                        autoState = AutoState.MOVERIGHT;
                     }
                     break;
-                case MOVELEFT:
+                case MOVERIGHT:
+                    autoTimer.reset();
                     autoTime = autoTimer.seconds();
                     bl.setPower(.5);
                     br.setPower(-.5);
@@ -116,9 +130,9 @@ public class V1AutoBlue extends LinearOpMode {
         }
     }
     private void setAllPower(double pow) {
-        bl.setPower(pow);
+        bl.setPower(0.85 * pow);
         br.setPower(pow);
         fr.setPower(pow);
-        fl.setPower(pow);
+        fl.setPower(0.85 * pow);
     }
 }

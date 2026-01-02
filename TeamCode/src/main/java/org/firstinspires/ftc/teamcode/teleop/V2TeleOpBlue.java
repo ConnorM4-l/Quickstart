@@ -67,6 +67,9 @@ public class V2TeleOpBlue extends OpMode {
 
         intake = hardwareMap.get(DcMotorSimple.class, "intakeMotor");
 
+        leftLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+
         intakeController = new Intake(hardwareMap);
         shotController = new Outtake(hardwareMap);
     }
@@ -90,21 +93,23 @@ public class V2TeleOpBlue extends OpMode {
                 -gamepad1.left_stick_y,
                 -gamepad1.left_stick_x,
                 -gamepad1.right_stick_x,
-                true); // Robot Centric)
+                false); // Robot Centric)
         if (gamepad1.a) {
             intakeController.spin(1);
         } else if (gamepad1.b) {
+            intakeController.spin(-1);
+        } else{
             intakeController.spin(0);
         }
 
-        if (gamepad1.dpad_right) {
+        if (gamepad2.dpad_right) {
             intakeController.gateRight();
-        } else if (gamepad1.dpad_left) {
+        } else if (gamepad2.dpad_left) {
             intakeController.gateLeft();
         }
 
         if (gamepad1.x) {
-            follower.turnTo(Math.toRadians(135 + offsetShotHeading));
+            follower.turnTo(Math.toRadians(135));
         } else if (gamepad1.yWasPressed()) {
             //maybe somehow turn off that following
         }
@@ -119,17 +124,23 @@ public class V2TeleOpBlue extends OpMode {
             targetVelocity = 1000;
         }
 
+        if (gamepad2.left_bumper) {
+            targetVelocity -= 10;
+        } else if (gamepad2.right_bumper) {
+            targetVelocity += 10;
+        }
+
         if (gamepad1.left_bumper) {
             offsetShotHeading -= 1;
         } else if (gamepad1.right_bumper) {
             offsetShotHeading += 1;
         }
 
-        if (gamepad2.right_bumper && gamepad2.left_bumper) {
+        if (gamepad1.right_bumper && gamepad1.left_bumper) {
             shotController.shootBoth();
-        } else if (gamepad2.left_bumper) {
+        } else if (gamepad1.left_bumper) {
             shotController.shootLeft();
-        } else if (gamepad2.right_bumper) {
+        } else if (gamepad1.right_bumper) {
             shotController.shootRight();
         } else {
             shotController.noShoot();

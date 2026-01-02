@@ -2,12 +2,15 @@ package org.firstinspires.ftc.teamcode.auto;
 
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
+import static java.lang.Thread.sleep;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -20,6 +23,7 @@ import org.firstinspires.ftc.teamcode.subsystem.Outtake;
 import org.firstinspires.ftc.teamcode.subsystem.logitechCamera;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
+@Autonomous(name = "Advanced auto")
 public class V2AutoBlue extends OpMode {
     PathChain Path1;
     PathChain Path2;
@@ -64,6 +68,9 @@ public class V2AutoBlue extends OpMode {
 
         intake = hardwareMap.get(DcMotorSimple.class, "intakeMotor");
 
+        leftLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+
         intakeController = new Intake(hardwareMap);
         shotController = new Outtake(hardwareMap);
 
@@ -72,8 +79,15 @@ public class V2AutoBlue extends OpMode {
 
     @Override
     public void loop() {
-        autonomousPathUpdate();
+        try {
+            autonomousPathUpdate();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         shotController.update(1250);
+
+        telemetry.addData("path state", pathState);
+        telemetry.update();
     }
 
     public void buildPaths() {
@@ -119,7 +133,7 @@ public class V2AutoBlue extends OpMode {
         }
         int pathState = 0;
 
-        public void autonomousPathUpdate() {
+        public void autonomousPathUpdate() throws InterruptedException {
             switch (pathState) {
                 case 0:
                     follower.followPath(Path1);
@@ -170,6 +184,7 @@ public class V2AutoBlue extends OpMode {
 
                         /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
                         intakeController.gateLeft();
+                        sleep(200);
                         follower.followPath(Path4, 0.5, true);
                         intakeController.spin(0);
                         setPathState(4);
