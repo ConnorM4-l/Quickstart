@@ -15,7 +15,9 @@ public class BluePaths {
     public PathChain moveBack;
     public PathChain goIntakeTwoBalls;
     public PathChain goBackToShotLocation;
+    public PathChain leaveShotFinal;
 
+    //make an enum that stores the different paths like closeSixBall, farSixBall, ect.
     public BluePaths(Follower follower) {
         leaveStartToShotLocation = follower
                 .pathBuilder()
@@ -62,6 +64,15 @@ public class BluePaths {
                 .pathBuilder()
                 .addPath(new BezierLine(new Pose(8.514, 8.661), new Pose(56.073, 15.706)))
                 .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(114))
+                .build();
+        leaveShotFinal = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(56.073, 15.706),
+
+                                new Pose(47.780, 71.670)
+                        )
+                ).setLinearHeadingInterpolation(Math.toRadians(114), Math.toRadians(180))
+
                 .build();
     }
 }

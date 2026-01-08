@@ -20,16 +20,10 @@ import org.firstinspires.ftc.teamcode.subsystem.Outtake;
 
 @Autonomous(name = "blue auto far")
 public class V2AutoBlueFar extends OpMode {
-
-    public PathChain Path1;
-    public PathChain Path2;
-    public PathChain Path3;
-
     private DcMotorEx leftLauncher = null;
     private DcMotorEx rightLauncher = null;
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
-
     private DcMotorSimple intake = null;
 
     private Pose startPose = new Pose(56, 8, Math.toRadians(90));
@@ -42,14 +36,17 @@ public class V2AutoBlueFar extends OpMode {
 
     private Timer autoTimer;
 
+    private BluePaths bluePaths;
+
+    private Follower follower;
+
 
     @Override
     public void init() {
         follower = Constants.createFollower(hardwareMap);
-        buildPaths(follower);
+        bluePaths = new BluePaths(follower);
         follower.setStartingPose(startPose);
 
-        shotController = new Outtake(hardwareMap);
 
         leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
         rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
@@ -59,69 +56,84 @@ public class V2AutoBlueFar extends OpMode {
         intake = hardwareMap.get(DcMotorSimple.class, "intakeMotor");
 
         intakeController = new Intake(hardwareMap);
+        shotController = new Outtake(hardwareMap);
 
         autoTimer = new Timer();
     }
 
     @Override
     public void loop() {
+        follower.update();
         autonomousPathUpdate();
         shotController.update(1650);
+
+        telemetry.addData("path state", pathState);
+        telemetry.addData("x", follower.getPose().getX());
+        telemetry.addData("y", follower.getPose().getY());
+        telemetry.addData("heading", follower.getPose().getHeading());
+        telemetry.addData("launcher error", shotController.getErr());
+        telemetry.addData("launcher velocity", shotController.getVelocity());
+        telemetry.update();
     }
 
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.followPath(Path1);
+                follower.followPath(bluePaths.leaveStartToShotLocation);
+                autoTimer.resetTimer();
                 pathState = 1;
                 break;
             case 1:
-                follower.followPath(Path2);
-                autoTimer.resetTimer();
-                pathState = 2;
+                if (!follower.isBusy()) {
+                    //shoot here
+                    if (shotController.shootTwoThenOne()) { //this tells you if the shot is done
+                        follower.followPath(bluePaths.goIntakeOneBall);
+                        //spin intake
+                        intakeController.gateRight();
+                        intakeController.spin(1);
+                        autoTimer.resetTimer();
+                        pathState = 2;
+                    }
+                }
                 break;
             case 2:
-                double autoTime = autoTimer.getElapsedTimeSeconds();
-                if (autoTime < 3) {
-                    shotController.shootLeft();
-                } else if (autoTime < 9) {
-                    shotController.shootRight();
-                    intakeController.spin(1);
-                } else if (autoTime > 9) {
-                    intakeController.spin(0);
+                if (!follower.isBusy()) {
+                    follower.followPath(bluePaths.moveBack);
+                    intakeController.gateLeft();
                     pathState = 3;
                 }
                 break;
             case 3:
-            follower.followPath(Path3);
-            pathState = -1;
-            break;
-
+                if (!follower.isBusy()) {
+                    follower.followPath(bluePaths.goIntakeTwoBalls);
+                    intakeController.gateLeft();
+                    pathState = 4;
+                }
+                break;
+            case 4:
+                if (!follower.isBusy()) {
+                    follower.followPath(bluePaths.goBackToShotLocation);
+                    intakeController.spin(0);
+                    pathState = 5;
+                }
+                break;
+            case 5:
+                if (!follower.isBusy()) {
+                    //shoot
+                    if (shotController.shootTwoThenOne()) {
+                        pathState = 6;
+                    }
+                }
+                break;
+            case 6:
+                follower.followPath(bluePaths.leaveShotFinal);
+                pathState = 7;
+                break;
+            case 7:
+                if (!follower.isBusy()) {
+                    pathState = -1;
+                }
+                break;
         }
-    }
-
-    public void buildPaths(Follower follower) {
-        Path1 = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(new Pose(56.000, 7.927), new Pose(56.000, 13.500))
-                )
-                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(90))
-                .build();
-
-        Path2 = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(new Pose(56.000, 13.500), new Pose(56.000, 13.500))
-                )
-                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(112))
-                .build();
-        Path3 = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(new Pose(56.000, 13.500), new Pose(50.000, 24.000))
-                )
-                .setLinearHeadingInterpolation(Math.toRadians(112), Math.toRadians(112))
-                .build();
     }
 }

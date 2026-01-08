@@ -35,7 +35,7 @@ public class flywheel {
 
     public void update(double LAUNCHER_TARGET_VELOCITY) {
 //        power = launcherController.update(LAUNCHER_TARGET_VELOCITY, rightLauncherEncoder.getDeltaPosition() * 60.0 / 28);
-        power = launcherController.update(LAUNCHER_TARGET_VELOCITY, rightLauncher.getVelocity());
+        power = launcherController.update(LAUNCHER_TARGET_VELOCITY, -rightLauncher.getVelocity());
 
         setPower(power);
     }

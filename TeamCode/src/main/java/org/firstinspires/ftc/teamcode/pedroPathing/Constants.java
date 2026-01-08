@@ -26,7 +26,7 @@ public class Constants {
             .lateralZeroPowerAcceleration(-59.3570833)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.45, 0, 0.035, 0.02))
             .headingPIDFCoefficients(new PIDFCoefficients(1.5, 0.0, 0.05, 0.033))
-            .mass(10.43); // weigh robot
+            .mass(10.53); // weigh robot
     public static PathConstraints pathConstraints = new PathConstraints(
             0.99,
             100,
@@ -35,7 +35,7 @@ public class Constants {
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
-            .xVelocity(80.41534)
+            .xVelocity(75.688613)
             .yVelocity(66.921075)
             .rightFrontMotorName("fr") //make sure these names match
             .rightRearMotorName("br")
@@ -45,8 +45,6 @@ public class Constants {
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .xVelocity(72.0393)
-            .yVelocity(58.66749)
             .useBrakeModeInTeleOp(true);
     public static PinpointConstants localizerConstants = new PinpointConstants()
             //updated with new odom locations
@@ -60,7 +58,7 @@ public class Constants {
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
 
             //change these by using localization test
-            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
+            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)

@@ -26,7 +26,7 @@ public class Outtake {
         BREAK2,
         SHOOT3;
     }
-    public static double timeShot;
+    public static double timeShot = 5;
     public static double timeBetween;
 
     LaunchingState launchingState = LaunchingState.SPIN;
@@ -54,6 +54,28 @@ public class Outtake {
     }
     public void shootBoth() { feed.update(true, true); }
     public void noShoot() { feed.update(false, false); }
+
+    public boolean shootTwoThenOne() {
+        switch (launchingState) {
+            case SPIN:
+                if (Math.abs(launcher.getErr()) < 100) {
+                    launcherTimer.reset();
+                    shootBoth();
+                    launchingState = LaunchingState.SHOOT3;
+                }
+                break;
+            case SHOOT3:
+                launcherTime = launcherTimer.seconds();
+                if (launcherTime > timeShot) {
+                    launcherTimer.reset();
+                    noShoot();
+                    launchingState = LaunchingState.SPIN;
+                    //this will make the loop stop running
+                    return true;
+                }
+        }
+        return false;
+    }
 
     public void LRRShoot(boolean aligned) {
         switch (launchingState) {
@@ -107,6 +129,10 @@ public class Outtake {
                 }
                 break;
         }
+    }
+
+    public LaunchingState launchingState() {
+        return launchingState;
     }
 
     public double getErr() {
