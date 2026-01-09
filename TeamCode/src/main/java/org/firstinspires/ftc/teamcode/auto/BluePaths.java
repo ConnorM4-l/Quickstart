@@ -16,6 +16,10 @@ public class BluePaths {
     public PathChain goIntakeTwoBalls;
     public PathChain goBackToShotLocation;
     public PathChain leaveShotFinal;
+    public PathChain goIntakeFirstInRow;
+    public PathChain goIntakeRestInRow;
+    public PathChain moveBackToShotThirdTime;
+    public PathChain goToPark;
 
     //make an enum that stores the different paths like closeSixBall, farSixBall, ect.
     public BluePaths(Follower follower) {
@@ -65,14 +69,38 @@ public class BluePaths {
                 .addPath(new BezierLine(new Pose(8.514, 8.661), new Pose(56.073, 15.706)))
                 .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(114))
                 .build();
-        leaveShotFinal = follower.pathBuilder().addPath(
+        goIntakeFirstInRow = follower.pathBuilder().addPath(
                         new BezierLine(
                                 new Pose(56.073, 15.706),
 
-                                new Pose(47.780, 71.670)
+                                new Pose(34.422, 35.119)
                         )
                 ).setLinearHeadingInterpolation(Math.toRadians(114), Math.toRadians(180))
+                .build();
 
+        goIntakeRestInRow = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(34.422, 35.119),
+
+                                new Pose(8.037, 35.119)
+                        )
+                ).setTangentHeadingInterpolation()
+                .build();
+
+        moveBackToShotThirdTime = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(8.037, 35.119),
+                                new Pose(56.073, 15.706)
+                        )
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(114))
+                .build();
+
+        goToPark = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(56.073, 15.706),
+                                new Pose(48.229, 71.954)
+                        )
+                ).setLinearHeadingInterpolation(Math.toRadians(114), Math.toRadians(180))
                 .build();
     }
 }

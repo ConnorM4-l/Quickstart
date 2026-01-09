@@ -121,15 +121,38 @@ public class V2AutoBlueFar extends OpMode {
                 if (!follower.isBusy()) {
                     //shoot
                     if (shotController.shootTwoThenOne()) {
+                        follower.followPath(bluePaths.goIntakeFirstInRow);
+                        intakeController.spin(1);
                         pathState = 6;
                     }
                 }
                 break;
             case 6:
-                follower.followPath(bluePaths.leaveShotFinal);
-                pathState = 7;
+                if (!follower.isBusy()) {
+                    follower.followPath(bluePaths.goIntakeRestInRow);
+                    pathState = 7;
+                }
                 break;
             case 7:
+                if (!follower.isBusy()) {
+                    intakeController.spin(0);
+                    pathState = 8;
+                }
+                break;
+            case 8:
+                follower.followPath(bluePaths.moveBackToShotThirdTime);
+                pathState = 9;
+                break;
+
+            case 9:
+                if (!follower.isBusy()) {
+                    if (shotController.shootTwoThenOne()) {
+                        follower.followPath(bluePaths.goToPark);
+                        pathState = 10;
+                    }
+                }
+                break;
+            case 10:
                 if (!follower.isBusy()) {
                     pathState = -1;
                 }
