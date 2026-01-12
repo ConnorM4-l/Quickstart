@@ -148,6 +148,9 @@ public class V2TeleOpBlue extends OpMode {
 
         telemetry.addData("target velocity", targetVelocity);
         telemetry.addData("offsetShotHeading", offsetShotHeading);
+        telemetry.addData("desired Heading", desiredHeading());
+        telemetry.addData("isAligned", isAligned());
+        telemetry.addData("distanceFromGoal", distanceFromGoal());
         telemetry.update();
     }
 
