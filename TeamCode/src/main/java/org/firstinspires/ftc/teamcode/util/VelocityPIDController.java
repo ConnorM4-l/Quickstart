@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 @Configurable
 public class VelocityPIDController {
-    public static double kP = 0.05, kD = 0, kI = 0, kFs = 0.13, kFv = 0.00055;
+    public static double kP = 0.2, kD = 0.001, kI = 0.0001, kFs = 0.18, kFv = 0.00035;
     //Fs and Fv, and then P then D and then I if necessary
 
     ElapsedTime timer = new ElapsedTime();

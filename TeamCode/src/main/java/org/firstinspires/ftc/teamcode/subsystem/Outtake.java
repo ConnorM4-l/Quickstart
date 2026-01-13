@@ -41,7 +41,8 @@ public class Outtake {
     }
 
     public void update(double distanceFromGoal) {
-        double velocityRequested = velocitySolver.getVelocity(distanceFromGoal);
+        //double velocityRequested = velocitySolver.getVelocity(distanceFromGoal);
+
 
         launcher.update(distanceFromGoal);
         launcherTime = launcherTimer.seconds();
