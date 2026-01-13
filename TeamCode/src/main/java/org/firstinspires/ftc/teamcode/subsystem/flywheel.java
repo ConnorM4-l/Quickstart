@@ -13,21 +13,25 @@ public class flywheel {
 
     double accTime = 0;
 
-    private double power = 0;
+    private double rightPower = 0;
+    private double leftPower = 0;
 
-    private final VelocityPIDController launcherController = new VelocityPIDController();
+    private final VelocityPIDController rightLauncherController = new VelocityPIDController();
+    private final VelocityPIDController leftLauncherController = new VelocityPIDController();
+
 
     private DcMotorEx leftLauncher;
     private DcMotorEx rightLauncher;
 
     private Encoder rightLauncherEncoder;
+    private Encoder leftLauncherEncoder;
 
     public flywheel(HardwareMap hardwareMap) {
         leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
         rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
 
         rightLauncherEncoder = new Encoder(rightLauncher);
-
+        leftLauncherEncoder = new Encoder(leftLauncher);
 
 
         accTimer.reset();
@@ -35,25 +39,36 @@ public class flywheel {
 
     public void update(double LAUNCHER_TARGET_VELOCITY) {
 //        power = launcherController.update(LAUNCHER_TARGET_VELOCITY, rightLauncherEncoder.getDeltaPosition() * 60.0 / 28);
-        power = launcherController.update(LAUNCHER_TARGET_VELOCITY, -rightLauncher.getVelocity());
+        rightPower = rightLauncherController.update(LAUNCHER_TARGET_VELOCITY, -rightLauncher.getVelocity());
+        leftPower = leftLauncherController.update(LAUNCHER_TARGET_VELOCITY, leftLauncher.getVelocity());
 
-        setPower(power);
+        setPower();
     }
 
-    private void setPower(double pow) {
-        leftLauncher.setPower(pow);
-        rightLauncher.setPower(pow);
+    private void setPower() {
+        leftLauncher.setPower(leftPower);
+        rightLauncher.setPower(rightPower);
     }
 
-    public double getErr() {
-        return launcherController.getErr();
+    public double getLeftErr() {
+        return leftLauncherController.getErr();
     }
 
-    public double getVelocity() {
-        return launcherController.getVelocity();
+    public double getRightErr() {return rightLauncherController.getErr();}
+
+    public double getLeftVelocity() {
+        return leftLauncherController.getVelocity();
     }
 
-    public double getAcceleration() {
-        return launcherController.getAcceleration();
+    public double getRightVelocity() {
+        return rightLauncherController.getVelocity();
+    }
+
+    public double getLeftAcceleration() {
+        return leftLauncherController.getAcceleration();
+    }
+
+    public double getRightAcceleration() {
+        return rightLauncherController.getAcceleration();
     }
 }

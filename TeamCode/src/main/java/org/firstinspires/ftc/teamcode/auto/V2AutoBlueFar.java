@@ -71,8 +71,10 @@ public class V2AutoBlueFar extends OpMode {
         telemetry.addData("x", follower.getPose().getX());
         telemetry.addData("y", follower.getPose().getY());
         telemetry.addData("heading", follower.getPose().getHeading());
-        telemetry.addData("launcher error", shotController.getErr());
-        telemetry.addData("launcher velocity", shotController.getVelocity());
+        telemetry.addData("left launcher error", shotController.getLeftErr());
+        telemetry.addData("right launcher error", shotController.getRightErr());
+        telemetry.addData("left launcher velocity", shotController.getLeftVelocity());
+        telemetry.addData("right launcher velocity", shotController.getRightVelocity());
         telemetry.update();
     }
 

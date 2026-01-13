@@ -4,10 +4,12 @@ package org.firstinspires.ftc.teamcode.teleop;
 import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
+import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.MathFunctions;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -26,7 +28,7 @@ Make the driver be able to change heading by a little bit
 @TeleOp
 public class V2TeleOpBlue extends OpMode {
     private Follower follower;
-    private Pose startingPose = new Pose(8, 8, 0); //See ExampleAuto to understand how to use this
+    private Pose startingPose = new Pose(9.467, 9.321, 0); //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
 
     private DcMotorEx leftLauncher = null;
@@ -40,8 +42,8 @@ public class V2TeleOpBlue extends OpMode {
     private Intake intakeController;
 
     private double offsetHeading = 0;
-    private Pose targetPose = new Pose(5, 67, 0);
-    private double targetHeading = 0;
+    private Pose targetPose = new Pose(12.844, 134.239, 0);
+    private double targetHeading = 0; //should be in radians
     private double offsetShotHeading = 0;
 
     private boolean following = false;
@@ -51,13 +53,22 @@ public class V2TeleOpBlue extends OpMode {
     private boolean shootingRLR = false;
     private boolean shootingRRL = false;
 
+    private double headingError = 0;
+    private double headingGoal = 0;
+
     private double targetVelocity = 1500;
+    PIDFController controller = new PIDFController(follower.constants.coefficientsHeadingPIDF);
+    boolean headingLock = true;
+
+
 
     @Override
     public void init() {
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose);
         follower.update();
+
+        controller.setCoefficients(follower.constants.coefficientsHeadingPIDF);
 
         leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
         rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
@@ -87,13 +98,12 @@ public class V2TeleOpBlue extends OpMode {
         //Call this once per loop
         follower.update();
         shotController.update(targetVelocity);
+        setHeadingGoal();
         //shotController.update(distanceFromGoal());
 
-        follower.setTeleOpDrive(
-                -gamepad1.left_stick_y,
-                -gamepad1.left_stick_x,
-                -gamepad1.right_stick_x,
-                false); // Robot Centric)
+        controller.updateError(getHeadingError());
+
+
         if (gamepad1.a) {
             intakeController.spin(1);
         } else if (gamepad1.b) {
@@ -109,10 +119,17 @@ public class V2TeleOpBlue extends OpMode {
         }
 
         if (gamepad1.x) {
-            follower.turnTo(Math.toRadians(135));
+            //maybe do a setHeading
+            //follower.turnTo(desiredHeading());
+            follower.resumePathFollowing();
         } else if (gamepad1.yWasPressed()) {
-            //maybe somehow turn off that following
+            follower.pausePathFollowing();
         }
+
+        if (gamepad1.x)
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, controller.run(), true);
+        else
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
 
         if (gamepad2.xWasPressed()) {
             targetVelocity = 1650;
@@ -148,20 +165,27 @@ public class V2TeleOpBlue extends OpMode {
 
         telemetry.addData("target velocity", targetVelocity);
         telemetry.addData("offsetShotHeading", offsetShotHeading);
-        telemetry.addData("desired Heading", desiredHeading());
-        telemetry.addData("isAligned", isAligned());
+        telemetry.addData("heading goal", headingGoal);
+        telemetry.addData("is aligned", isAligned());
         telemetry.addData("distanceFromGoal", distanceFromGoal());
         telemetry.update();
     }
 
-    public double desiredHeading() {
-        return Math.atan2(targetPose.getY() - follower.getPose().getY(), targetPose.getX()) - follower.getPose().getX();
+    public void setHeadingGoal() {
+        headingGoal = Math.atan2(targetPose.getY() - follower.getPose().getY(), targetPose.getX()) - follower.getPose().getX();
     }
     public double distanceFromGoal() {
         return Math.sqrt(Math.pow(targetPose.getX() - follower.getPose().getX(), 2) + Math.pow(targetPose.getY() - follower.getPose().getY(), 2));
     }
     public boolean isAligned() {
         return Math.abs(follower.getHeading() - targetHeading) < 0.1;
+    }
+    public double getHeadingError() {
+        if (follower.getCurrentPath() == null) {
+            return 0;
+        }
+        headingError = MathFunctions.getTurnDirection(follower.getPose().getHeading(), headingGoal) * MathFunctions.getSmallestAngleDifference(follower.getPose().getHeading(), headingGoal);
+        return headingError;
     }
 }
 

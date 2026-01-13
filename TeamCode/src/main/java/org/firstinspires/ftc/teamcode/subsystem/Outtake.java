@@ -58,7 +58,7 @@ public class Outtake {
     public boolean shootTwoThenOne() {
         switch (launchingState) {
             case SPIN:
-                if (Math.abs(launcher.getErr()) < 100) {
+                if (Math.abs(getErr()) < 100) {
                     launcherTimer.reset();
                     shootBoth();
                     launchingState = LaunchingState.SHOOT3;
@@ -135,8 +135,12 @@ public class Outtake {
         return launchingState;
     }
 
-    public double getErr() {
-        return launcher.getErr();
+    public double getLeftErr() {
+        return launcher.getLeftErr();
+    }
+
+    public double getRightErr() {
+        return launcher.getRightErr();
     }
 
     public boolean isStillShooting() {
@@ -145,11 +149,24 @@ public class Outtake {
 
 //    public void setLRR
 
-    public double getVelocity() {
-        return launcher.getVelocity();
+    public double getLeftVelocity() {
+        return launcher.getLeftVelocity();
     }
 
-    public double getAcceleration() {
-        return launcher.getAcceleration();
+    public double getRightVelocity() {
+        return launcher.getRightVelocity();
+    }
+
+    private double getErr() {
+        return Math.max(Math.abs(launcher.getLeftErr()), Math.abs(launcher.getRightErr()));
+    }
+
+
+    public double getLeftAcceleration() {
+        return launcher.getLeftAcceleration();
+    }
+
+    public double getRightAcceleration() {
+        return launcher.getRightAcceleration();
     }
 }
