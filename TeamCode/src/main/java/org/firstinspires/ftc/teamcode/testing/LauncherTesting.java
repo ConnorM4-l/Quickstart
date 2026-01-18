@@ -47,7 +47,7 @@ public class LauncherTesting extends OpMode {
         rightFeeder = hardwareMap.get(CRServo.class, "rightFeeder");
 
         leftLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
-        rightLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
 
         shotController = new Outtake(hardwareMap);
         //movementController = new drivetrain(hardwareMap, location);
@@ -66,10 +66,12 @@ public class LauncherTesting extends OpMode {
         //1250 for corner
 
 
-        telemetryM.addData("Error", shotController.getLeftErr());
+        telemetryM.addData("Left rror", shotController.getLeftErr());
+        telemetryM.addData("right error", shotController.getRightErr());
         //telemetryM.addData("Launcher target velocity", velocitySolver.getVelocity(visionController.getDistance()));
         telemetryM.addData("Launcher target velocity", launcherInitVelocity);
-        telemetryM.addData("Launcher velocity", shotController.getLeftVelocity());
+        telemetryM.addData("Launcher left velocity", shotController.getLeftVelocity());
+        telemetryM.addData("Launcher right velocity", shotController.getRightVelocity());
         telemetryM.addData("Launcher acceleration", shotController.getLeftAcceleration());
 
         telemetryM.update();

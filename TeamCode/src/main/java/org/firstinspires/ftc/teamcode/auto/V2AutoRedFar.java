@@ -18,15 +18,15 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystem.Intake;
 import org.firstinspires.ftc.teamcode.subsystem.Outtake;
 
-@Autonomous(name = "blue auto far")
-public class V2AutoBlueFar extends OpMode {
+@Autonomous(name = "red auto far")
+public class V2AutoRedFar extends OpMode {
     private DcMotorEx leftLauncher = null;
     private DcMotorEx rightLauncher = null;
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
     private DcMotorSimple intake = null;
 
-    private Pose startPose = new Pose(56, 8, Math.toRadians(90));
+    private Pose startPose = new Pose(88, 8, Math.toRadians(90));
 
     private int pathState = 0;
 
@@ -36,7 +36,7 @@ public class V2AutoBlueFar extends OpMode {
 
     private Timer autoTimer;
 
-    private BluePaths bluePaths;
+    private RedPaths bluePaths;
 
     private Follower follower;
 
@@ -44,7 +44,7 @@ public class V2AutoBlueFar extends OpMode {
     @Override
     public void init() {
         follower = Constants.createFollower(hardwareMap);
-        bluePaths = new BluePaths(follower);
+        bluePaths = new RedPaths(follower);
         follower.setStartingPose(startPose);
 
 
@@ -121,10 +121,10 @@ public class V2AutoBlueFar extends OpMode {
                 //configure the 10 inches to the max distance away from which you can start shooting
                 if (follower.getDistanceRemaining() < 10) {
                     if (shotController.shootTwoThenOne()) {
-                            //shoot
-                            follower.followPath(bluePaths.goIntakeFirstInRow);
-                            intakeController.spin(1);
-                            pathState = 6;
+                        //shoot
+                        follower.followPath(bluePaths.goIntakeFirstInRow);
+                        intakeController.spin(1);
+                        pathState = 6;
                     }
                 }
                 break;

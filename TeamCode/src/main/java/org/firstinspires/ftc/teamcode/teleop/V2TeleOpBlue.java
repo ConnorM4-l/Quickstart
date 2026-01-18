@@ -28,6 +28,8 @@ Make the driver be able to change heading by a little bit
 @TeleOp
 public class V2TeleOpBlue extends OpMode {
     private Follower follower;
+    private PIDFController controller;
+    //public static Pose startingPose;
     private Pose startingPose = new Pose(9.467, 9.321, 0); //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
 
@@ -56,15 +58,18 @@ public class V2TeleOpBlue extends OpMode {
     private double headingError = 0;
     private double headingGoal = 0;
 
-    private double targetVelocity = 1500;
-    PIDFController controller = new PIDFController(follower.constants.coefficientsHeadingPIDF);
+    private double targetVelocity = 900;
+
     boolean headingLock = true;
+
+
 
 
 
     @Override
     public void init() {
         follower = Constants.createFollower(hardwareMap);
+        controller = new PIDFController(follower.constants.coefficientsHeadingPIDF);
         follower.setStartingPose(startingPose);
         follower.update();
 
@@ -79,7 +84,7 @@ public class V2TeleOpBlue extends OpMode {
         intake = hardwareMap.get(DcMotorSimple.class, "intakeMotor");
 
         leftLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
-        rightLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightLauncher.setDirection(DcMotorSimple.Direction.FORWARD);
 
         intakeController = new Intake(hardwareMap);
         shotController = new Outtake(hardwareMap);
@@ -131,19 +136,19 @@ public class V2TeleOpBlue extends OpMode {
         else
             follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
 
-        if (gamepad2.xWasPressed()) {
-            targetVelocity = 1650;
-        } else if (gamepad2.yWasPressed()) {
-            targetVelocity = 1500;
+        if (gamepad2.dpad_up) {
+            targetVelocity = 1400;
+        } else if (gamepad2.dpad_down) {
+            targetVelocity = 1600;
+        } else if (gamepad2.dpad_left) {
+            targetVelocity = 1240;
         } else if (gamepad2.aWasPressed()) {
-            targetVelocity = 1250;
-        } else if (gamepad2.bWasPressed()) {
-            targetVelocity = 1000;
+            targetVelocity = 1100;
         }
 
-        if (gamepad2.left_bumper) {
+        if (gamepad2.leftBumperWasPressed()) {
             targetVelocity -= 10;
-        } else if (gamepad2.right_bumper) {
+        } else if (gamepad2.rightBumperWasPressed()) {
             targetVelocity += 10;
         }
 
@@ -153,8 +158,9 @@ public class V2TeleOpBlue extends OpMode {
             offsetShotHeading += 1;
         }
 
-        if (gamepad1.right_bumper && gamepad1.left_bumper) {
+        if (gamepad1.right_trigger > 0.5 ) {
             shotController.shootBoth();
+            intakeController.spin(1);
         } else if (gamepad1.left_bumper) {
             shotController.shootLeft();
         } else if (gamepad1.right_bumper) {

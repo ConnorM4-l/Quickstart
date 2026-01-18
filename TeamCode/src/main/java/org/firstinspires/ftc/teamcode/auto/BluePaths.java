@@ -28,9 +28,10 @@ public class BluePaths {
                 .addPath(
                         new BezierLine(new Pose(56.000, 8.000), new Pose(56.073, 15.706))
                 )
-                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(114))
+                //reference value was 25, but 0.5 was very slow
+                //.setVelocityConstraint(0.5)
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(112))
                 .build();
-
         goIntakeOneBall = follower
                 .pathBuilder()
                 .addPath(
@@ -48,7 +49,7 @@ public class BluePaths {
                 .addPath(
                         new BezierLine(new Pose(10.422, 18.642), new Pose(31.266, 16.147))
                 )
-                .setTangentHeadingInterpolation()
+                .setLinearHeadingInterpolation(Math.toRadians(8), Math.toRadians(29))
                 .setReversed()
                 .build();
 
@@ -57,8 +58,8 @@ public class BluePaths {
                 .addPath(
                         new BezierCurve(
                                 new Pose(31.266, 16.147),
-                                new Pose(21.431, 8.807),
-                                new Pose(8.514, 8.661)
+                                new Pose(19.669, 9.688),
+                                new Pose(8.514, 9.661)
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -67,7 +68,7 @@ public class BluePaths {
         goBackToShotLocation = follower
                 .pathBuilder()
                 .addPath(new BezierLine(new Pose(8.514, 8.661), new Pose(56.073, 15.706)))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(114))
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(112))
                 .build();
         goIntakeFirstInRow = follower.pathBuilder().addPath(
                         new BezierLine(
@@ -75,32 +76,32 @@ public class BluePaths {
 
                                 new Pose(34.422, 35.119)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(114), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(112), Math.toRadians(180))
                 .build();
 
         goIntakeRestInRow = follower.pathBuilder().addPath(
                         new BezierLine(
                                 new Pose(34.422, 35.119),
 
-                                new Pose(8.037, 35.119)
+                                new Pose(9.037, 35.119)
                         )
                 ).setTangentHeadingInterpolation()
                 .build();
 
         moveBackToShotThirdTime = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(8.037, 35.119),
+                                new Pose(9.037, 35.119),
                                 new Pose(56.073, 15.706)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(114))
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(112))
                 .build();
 
         goToPark = follower.pathBuilder().addPath(
                         new BezierLine(
                                 new Pose(56.073, 15.706),
-                                new Pose(48.229, 71.954)
+                                new Pose(48.229, 61.954)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(114), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(112), Math.toRadians(180))
                 .build();
     }
 }
