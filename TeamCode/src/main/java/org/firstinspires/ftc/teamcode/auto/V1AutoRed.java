@@ -103,7 +103,6 @@ public class V1AutoRed extends LinearOpMode {
                         shotController.shootLeft();
                     } else if (autoTime < 9) {
                         shotController.shootRight();
-                        intakeController.gateRight();
                         intakeController.spin(1);
                     } else if (autoTime > 9) {
                         intakeController.spin(0);

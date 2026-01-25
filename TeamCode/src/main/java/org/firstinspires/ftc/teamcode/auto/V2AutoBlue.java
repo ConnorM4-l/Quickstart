@@ -42,7 +42,6 @@ public class V2AutoBlue extends OpMode {
     private DcMotorEx rightLauncher = null;
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
-    private Servo sGate = null;
     private DcMotorSimple intake = null;
 
     private Outtake shotController;
@@ -64,7 +63,6 @@ public class V2AutoBlue extends OpMode {
         rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
         leftFeeder = hardwareMap.get(CRServo.class, "leftFeeder");
         rightFeeder = hardwareMap.get(CRServo.class, "rightFeeder");
-        sGate = hardwareMap.get(Servo.class, "sGate");
 
         intake = hardwareMap.get(DcMotorSimple.class, "intakeMotor");
 
@@ -73,8 +71,6 @@ public class V2AutoBlue extends OpMode {
 
         intakeController = new Intake(hardwareMap);
         shotController = new Outtake(hardwareMap);
-
-        intakeController.gateRight();
     }
 
     @Override
@@ -183,7 +179,6 @@ public class V2AutoBlue extends OpMode {
                         /* Score Sample */
 
                         /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                        intakeController.gateLeft();
                         sleep(200);
                         follower.followPath(Path4, 0.5, true);
                         intakeController.spin(0);

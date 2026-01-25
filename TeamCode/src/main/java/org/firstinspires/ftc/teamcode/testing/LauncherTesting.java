@@ -66,7 +66,7 @@ public class LauncherTesting extends OpMode {
         //1250 for corner
 
 
-        telemetryM.addData("Left rror", shotController.getLeftErr());
+        telemetryM.addData("Left error", shotController.getLeftErr());
         telemetryM.addData("right error", shotController.getRightErr());
         //telemetryM.addData("Launcher target velocity", velocitySolver.getVelocity(visionController.getDistance()));
         telemetryM.addData("Launcher target velocity", launcherInitVelocity);

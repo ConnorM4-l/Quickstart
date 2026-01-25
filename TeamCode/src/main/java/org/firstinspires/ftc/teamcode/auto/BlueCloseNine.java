@@ -1,26 +1,22 @@
 package org.firstinspires.ftc.teamcode.auto;
 
-import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
-
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystem.Intake;
 import org.firstinspires.ftc.teamcode.subsystem.Outtake;
-import org.firstinspires.ftc.teamcode.util.RobotContext;
+import org.firstinspires.ftc.teamcode.subsystem.limelight;
 
-@Autonomous(name = "blue auto far")
-public class V2AutoBlueFar extends OpMode {
+@Autonomous(name = "blue close nine")
+public class BlueCloseNine extends OpMode {
     private DcMotorEx leftLauncher = null;
     private DcMotorEx rightLauncher = null;
     private CRServo leftFeeder = null;
@@ -35,6 +31,10 @@ public class V2AutoBlueFar extends OpMode {
 
     private Intake intakeController;
 
+    private limelight llController;
+    private Limelight3A limelight;
+
+
     private Timer autoTimer, globalTimer;
     private double globalTime;
 
@@ -42,12 +42,12 @@ public class V2AutoBlueFar extends OpMode {
 
     private Follower follower;
 
+    private double autoTime;
 
     @Override
     public void init() {
         follower = Constants.createFollower(hardwareMap);
-        bluePaths = new BluePaths(AutoType.FAR_SIX, follower);
-        follower.setStartingPose(RobotContext.lastPose);
+        bluePaths = new BluePaths(AutoType.CLOSE_NINE, follower);
 
         leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
         rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
@@ -56,8 +56,12 @@ public class V2AutoBlueFar extends OpMode {
 
         intake = hardwareMap.get(DcMotorSimple.class, "intakeMotor");
 
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+
         intakeController = new Intake(hardwareMap);
         shotController = new Outtake(hardwareMap);
+        llController = new limelight(hardwareMap, true);
+
 
         autoTimer = new Timer();
         globalTimer = new Timer();
@@ -67,11 +71,7 @@ public class V2AutoBlueFar extends OpMode {
     public void loop() {
         follower.update();
         autonomousPathUpdate();
-        shotController.update(1650);
-        globalTime = globalTimer.getElapsedTimeSeconds();
-
-
-
+        llController.update();
 
         telemetry.addData("path state", pathState);
         telemetry.addData("launching state", shotController.launchingState());
@@ -79,31 +79,25 @@ public class V2AutoBlueFar extends OpMode {
         telemetry.addData("x", follower.getPose().getX());
         telemetry.addData("y", follower.getPose().getY());
         telemetry.addData("heading", follower.getPose().getHeading());
-        telemetry.addData("left launcher error", shotController.getLeftErr());
-        telemetry.addData("right launcher error", shotController.getRightErr());
-        telemetry.addData("left launcher velocity", shotController.getLeftVelocity());
-        telemetry.addData("right launcher velocity", shotController.getRightVelocity());
+        telemetry.addData("Tag ID", llController.getID());
+        telemetry.addData("Valid", llController.getValid());
         telemetry.update();
-    }
-
-    @Override
-    public void stop() {
-        savePose();
     }
 
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.followPath(bluePaths.leaveStartToShotLocation, 0.5, true);
+                follower.followPath(bluePaths.shoot1Path);
                 autoTimer.resetTimer();
                 pathState = 1;
                 break;
             case 1:
                 if (!follower.isBusy()) {
-                    //shoot here
-                    if (shotController.shootTwoThenOne()) { //this tells you if the shot is done
-                        follower.followPath(bluePaths.goIntakeOneBall);
-                        //spin intake
+                    autoTime = autoTimer.getElapsedTimeSeconds();
+
+                    if (autoTime > 2) {
+                        follower.followPath(bluePaths.intake1Path);
+                        intakeController.spin(1);
                         autoTimer.resetTimer();
                         pathState = 2;
                     }
@@ -111,71 +105,36 @@ public class V2AutoBlueFar extends OpMode {
                 break;
             case 2:
                 if (!follower.isBusy()) {
-                    follower.followPath(bluePaths.moveBack);
+                    follower.followPath(bluePaths.shoot2Path);
+                    autoTimer.resetTimer();
                     pathState = 3;
                 }
                 break;
             case 3:
                 if (!follower.isBusy()) {
-                    follower.followPath(bluePaths.goIntakeTwoBalls);
-                    pathState = 4;
+                    autoTime = autoTimer.getElapsedTimeSeconds();
+                    if (autoTime > 1) {
+                        follower.followPath(bluePaths.intake2Path);
+                        intakeController.spin(1);
+                        autoTimer.resetTimer();
+                    }
                 }
                 break;
             case 4:
                 if (!follower.isBusy()) {
-                    follower.followPath(bluePaths.goBackToShotLocation);
-                    intakeController.spin(0);
+                    follower.followPath(bluePaths.shoot3Path);
+                    autoTimer.resetTimer();
                     pathState = 5;
                 }
                 break;
             case 5:
-                //configure the 10 inches to the max distance away from which you can start shooting
-                if (follower.getDistanceRemaining() < 10) {
-                    if (shotController.shootTwoThenOne()) {
-                        //shoot
-                        follower.followPath(bluePaths.goIntakeFirstInRow);
-                        intakeController.spin(1);
-                        pathState = 6;
+                if (!follower.isBusy()) {
+                    autoTime = autoTimer.getElapsedTimeSeconds();
+                    if (autoTime > 1) {
+                        pathState = -1;
                     }
-                }
-                break;
-            case 6:
-                if (!follower.isBusy()) {
-                    follower.followPath(bluePaths.goIntakeRestInRow);
-                    pathState = 7;
-                }
-                break;
-            case 7:
-                if (!follower.isBusy()) {
-                    intakeController.spin(0);
-                    pathState = 8;
-                }
-                break;
-            case 8:
-                follower.followPath(bluePaths.moveBackToShotThirdTime);
-                pathState = 9;
-                intakeController.spin(0);
-                break;
-
-            case 9:
-                if (follower.getDistanceRemaining() < 10) {
-                    if (shotController.shootTwoThenOne()) {
-                        //shoot
-                        follower.followPath(bluePaths.goToPark);
-                        pathState = 10;
-                    }
-                }
-                break;
-            case 10:
-                if (!follower.isBusy()) {
-                    savePose();
-                    pathState = -1;
                 }
                 break;
         }
-    }
-
-    private void savePose() {
-        RobotContext.lastPose =follower.getPose();
     }
 }
