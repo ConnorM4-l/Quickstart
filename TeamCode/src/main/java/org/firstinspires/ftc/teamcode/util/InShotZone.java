@@ -28,6 +28,13 @@ public class InShotZone {
         currentPose = new Pose();
     }
 
+    public static boolean checkInShotZone( Pose p)
+    {
+        double x = p.getX();
+        double y = p.getY();
+        return pointInPolygon(x, y, TOP_TRIANGLE) || pointInPolygon(x, y, BOTTOM_TRIANGLE);
+    }
+
     public void setCurrentPose(Pose pose) {
         currentPose = pose;
     }

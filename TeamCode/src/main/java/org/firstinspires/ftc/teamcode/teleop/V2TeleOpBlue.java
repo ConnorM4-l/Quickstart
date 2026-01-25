@@ -22,6 +22,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystem.Intake;
 import org.firstinspires.ftc.teamcode.subsystem.Outtake;
+import org.firstinspires.ftc.teamcode.util.InShotZone;
 import org.firstinspires.ftc.teamcode.util.RobotContext;
 
 /*
@@ -161,6 +162,7 @@ public class V2TeleOpBlue extends OpMode {
         telemetry.addData("heading", follower.getPose().getHeading());
         telemetry.addData("heading error", headingError);
         telemetry.addData("is aligned", isAligned());
+        telemetry.addData("In shotZone", InShotZone.checkInShotZone(follower.getPose()));
         telemetry.addData("distanceFromGoal", distanceFromGoal());
         telemetry.update();
     }
