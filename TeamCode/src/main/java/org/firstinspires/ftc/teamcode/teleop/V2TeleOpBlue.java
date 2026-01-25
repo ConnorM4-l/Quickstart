@@ -22,6 +22,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystem.Intake;
 import org.firstinspires.ftc.teamcode.subsystem.Outtake;
+import org.firstinspires.ftc.teamcode.util.InShotZone;
 import org.firstinspires.ftc.teamcode.util.RobotContext;
 
 /*
@@ -44,6 +45,7 @@ public class V2TeleOpBlue extends OpMode {
     private Outtake shotController;
     private Intake intakeController;
     private RobotContext robotContext;
+    private InShotZone inShotZone;
 
     private double offsetHeading = 0;
     private Pose targetPose = new Pose(12.844, 134.239, 0);
@@ -60,6 +62,8 @@ public class V2TeleOpBlue extends OpMode {
     private double headingError = 0;
     private double headingGoal = 0;
 
+    private boolean manualPick;
+
     private double targetVelocity = 900;
 
     boolean headingLock = true;
@@ -71,6 +75,8 @@ public class V2TeleOpBlue extends OpMode {
     public void init() {
         follower = Constants.createFollower(hardwareMap);
         robotContext = new RobotContext();
+        inShotZone = new InShotZone();
+
         controller = new PIDFController(new PIDFCoefficients(1.5, 0.0, 0.05, 0.033));
         startingPose = robotContext.getStartingPose();
 
@@ -112,45 +118,66 @@ public class V2TeleOpBlue extends OpMode {
         controller.updateError(getHeadingError());
 
 
-        if (gamepad1.a) {
+        if (gamepad1.aWasPressed()) {
             intakeController.spin(1);
-        } else if (gamepad1.b) {
+        } else if (gamepad1.bWasPressed()) {
             intakeController.spin(-1);
-        } else{
+        } else {
             intakeController.spin(0);
         }
 
-        if (shootMode)
+        if (shootMode) {
             follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, controller.run(), true);
-        else
+            inShotZone.update(follower.getPose());
+            if (inShotZone.isInShotZone() && getHeadingError() < 0.1) {
+                gamepad1.rumble(100);
+                if (gamepad1.left_trigger < 0.5) {
+                    if (manualPick) {
+                        if (gamepad1.left_bumper) {
+                            shotController.shootLeft();
+                        } else if (gamepad1.right_bumper) {
+                            shotController.shootRight();
+                        }
+                    } else {
+                        shotController.shootBoth();
+                    }
+                } else {
+                    shotController.noShoot();
+                }
+            }
+        } else {
             follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
-
-        if (gamepad2.dpad_up) {
-            targetVelocity = 1400;
-        } else if (gamepad2.dpad_down) {
-            targetVelocity = 1600;
-        } else if (gamepad2.dpad_left) {
-            targetVelocity = 1240;
-        } else if (gamepad2.aWasPressed()) {
-            targetVelocity = 1100;
         }
 
-        if (gamepad2.leftBumperWasPressed()) {
-            targetVelocity -= 10;
-        } else if (gamepad2.rightBumperWasPressed()) {
-            targetVelocity += 10;
+        if (gamepad2.right_trigger > 0.5) {
+            gamepad2.rumble(100);
+            if (gamepad2.dpad_up) {
+                targetVelocity = 1400;
+            } else if (gamepad2.dpad_down) {
+                targetVelocity = 1600;
+            } else if (gamepad2.dpad_left) {
+                targetVelocity = 1240;
+            } else if (gamepad2.aWasPressed()) {
+                targetVelocity = 1100;
+            }
+
+            if (gamepad2.leftBumperWasPressed()) {
+                targetVelocity -= 10;
+            } else if (gamepad2.rightBumperWasPressed()) {
+                targetVelocity += 10;
+            }
         }
 
         if (gamepad1.right_trigger > 0.5 ) {
-            shotController.shootBoth();
-            intakeController.spin(1);
-        } else if (gamepad1.left_bumper) {
-            shotController.shootLeft();
-        } else if (gamepad1.right_bumper) {
-            shotController.shootRight();
-        } else {
-            shotController.noShoot();
+            shootMode = true;
         }
+
+        if (gamepad1.dpad_down) {
+            manualPick = true;
+        } else if (gamepad1.dpad_up) {
+            manualPick = false;
+        }
+
 
         telemetry.addData("target velocity", targetVelocity);
         telemetry.addData("offsetShotHeading", offsetShotHeading);

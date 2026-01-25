@@ -28,7 +28,7 @@ public class InShotZone {
         currentPose = new Pose();
     }
 
-    public void setCurrentPose(Pose pose) {
+    public void update(Pose pose) {
         currentPose = pose;
     }
 
