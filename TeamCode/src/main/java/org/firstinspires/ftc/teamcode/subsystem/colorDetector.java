@@ -16,10 +16,17 @@ public class colorDetector {
     private final float[] leftHSV  = new float[] {0f, 0f, 0f};
     private final float[] rightHSV = new float[] {0f, 0f, 0f};
 
-    // Return codes
+    // Return codes (colors)
     public static final int NONE = 0;
     public static final int GREEN = 1;
     public static final int PURPLE = 2;
+
+    // Return codes (green position)
+    // 1 = left, 2 = right, 3 = back, 0 = unknown/none
+    public static final int GREEN_LEFT = 1;
+    public static final int GREEN_RIGHT = 2;
+    public static final int GREEN_BACK = 3;
+    public static final int GREEN_UNKNOWN = 0;
 
     public colorDetector(HardwareMap hardwareMap) {
         leftColorSensor  = hardwareMap.get(NormalizedColorSensor.class, "leftColorSensor");
@@ -45,6 +52,34 @@ public class colorDetector {
     /** Returns NONE(0), GREEN(1), PURPLE(2) for the RIGHT sensor. */
     public int detectRightBallColor() {
         return detectFromHSV(rightHSV);
+    }
+
+    /**
+     * Returns green position code:
+     * 1 = left, 2 = right, 3 = back, 0 = unknown/none
+     *
+     * Logic:
+     * - If left sensor sees GREEN -> green is left
+     * - Else if right sensor sees GREEN -> green is right
+     * - Else if neither sees GREEN but both see a ball (purple/green) -> assume green is back
+     * - Else -> unknown (not enough info / no balls)
+     */
+    public int getGreenPosition() {
+        int left = detectLeftBallColor();
+        int right = detectRightBallColor();
+
+        if (left == GREEN) return GREEN_LEFT;
+        if (right == GREEN) return GREEN_RIGHT;
+
+        boolean leftHasBall = (left != NONE);
+        boolean rightHasBall = (right != NONE);
+
+        if (leftHasBall && rightHasBall) {
+            // neither front sensor sees green, but both see balls -> green likely in back
+            return GREEN_BACK;
+        }
+
+        return GREEN_UNKNOWN;
     }
 
     /** Shared classification logic. Tune thresholds here. */
