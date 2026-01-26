@@ -1,23 +1,16 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
-import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
-
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierCurve;
-import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
-import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystem.Intake;
@@ -68,7 +61,9 @@ public class V2TeleOpBlue extends OpMode {
 
     boolean headingLock = true;
 
-    private boolean shootMode = false;
+    private boolean manualShot = true;
+    private boolean manualDrive = false;
+    private boolean prevManualShot = false;
 
 
     @Override
@@ -118,35 +113,37 @@ public class V2TeleOpBlue extends OpMode {
         controller.updateError(getHeadingError());
 
 
-        if (gamepad1.aWasPressed()) {
+        if (gamepad1.a) {
             intakeController.spin(1);
-        } else if (gamepad1.bWasPressed()) {
+        } else if (gamepad1.b) {
             intakeController.spin(-1);
         } else {
             intakeController.spin(0);
         }
 
-        if (shootMode) {
+        if (!manualDrive) {
             follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, controller.run(), true);
-            inShotZone.update(follower.getPose());
-            if (inShotZone.isInShotZone() && getHeadingError() < 0.1) {
-                gamepad1.rumble(100);
-                if (gamepad1.left_trigger < 0.5) {
-                    if (manualPick) {
-                        if (gamepad1.left_bumper) {
-                            shotController.shootLeft();
-                        } else if (gamepad1.right_bumper) {
-                            shotController.shootRight();
-                        }
-                    } else {
-                        shotController.shootBoth();
-                    }
+        } else {
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+        }
+
+        if (manualShot) {
+            //inShotZone.update(follower.getPose());
+            //inShotZone.isInShotZone() && getHeadingError() < 0.1
+            if ((Math.abs(getHeadingError()) < 0.1) || gamepad1.dpad_left) {
+                //gamepad1.rumble(100);
+                if (gamepad1.right_trigger > 0.5) {
+                    shotController.shootBoth();
+                } else if (gamepad1.left_bumper) {
+                    shotController.shootLeft();
+                } else if (gamepad1.right_bumper) {
+                    shotController.shootRight();
                 } else {
                     shotController.noShoot();
                 }
             }
         } else {
-            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+            //do the automatic shooting process with the sorting from color sensors and shotOrdered from the shotControllers
         }
 
         if (gamepad2.right_trigger > 0.5) {
@@ -169,7 +166,14 @@ public class V2TeleOpBlue extends OpMode {
         }
 
         if (gamepad1.right_trigger > 0.5 ) {
-            shootMode = true;
+            manualShot = true;
+        }
+
+        if (gamepad1.left_trigger > 0.5 && prevManualShot) {
+            prevManualShot = false;
+            manualDrive = !manualDrive;
+        } else if (gamepad1.left_trigger > 0.5){
+            prevManualShot = true;
         }
 
         if (gamepad1.dpad_down) {
@@ -188,8 +192,10 @@ public class V2TeleOpBlue extends OpMode {
         telemetry.addData("heading", follower.getPose().getHeading());
         telemetry.addData("heading error", headingError);
         telemetry.addData("is aligned", isAligned());
-        telemetry.addData("In shotZone", inShotZone.isInShotZone());
+        //telemetry.addData("In shotZone", inShotZone.isInShotZone());
         telemetry.addData("distanceFromGoal", distanceFromGoal());
+        telemetry.addData("manual shot", manualDrive);
+        telemetry.addData("manual pick", manualPick);
         telemetry.update();
     }
 

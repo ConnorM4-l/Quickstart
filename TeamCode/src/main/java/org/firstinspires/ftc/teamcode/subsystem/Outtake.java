@@ -35,6 +35,8 @@ public class Outtake {
 
     private int motif;
 
+    private int positionGreen;
+
     private enum LaunchingState {
         SPIN,
         SHOOT1,
@@ -47,10 +49,11 @@ public class Outtake {
         SHOOTLR,
         SHOOTRL,
         SHOOTL,
-        SHOOTR;
+        SHOOTR,
+        SHOOT_BOTH;
     }
     //get this as low as possible, grip tape?
-    public static double timeShot = 5;
+    public static double timeShot = 3;
     public static double timeBetween;
 
     LaunchingState launchingState = LaunchingState.SPIN;
@@ -65,6 +68,9 @@ public class Outtake {
         launcherTimer.reset();
         leftLauncherTimer.reset();
         rightLauncherTimer.reset();
+
+        motif = 21;
+        positionGreen = 1;
     }
 
     public void update(double distanceFromGoal) {
@@ -104,11 +110,16 @@ public class Outtake {
     3: LR
     4: RL
      */
+    public void setPositionGreen(int pos) {
+        positionGreen = pos;
+    }
 
-    public void shootOrdered(int positionGreen) {
+
+    public void shootOrdered() {
         int order = new DecideOrder().order(motif, positionGreen);
         switch (launchingState) {
             case SPIN:
+                stillShooting = true;
                 if (Math.abs(getErr()) < 100) {
                     launcherTimer.reset();
                     shotsLeft = 0;
@@ -126,17 +137,175 @@ public class Outtake {
                 }
                 break;
             case SHOOTLL:
-                if (hasShotLeft()) {
+                if (hasShotLeft() || launcherTime > timeShot) {
                     shotsLeft += 1;
+                    launcherTimer.reset();
                 }
                 if (shotsLeft >= 2) {
                     shootRight();
+                    launcherTimer.reset();
                     launchingState = LaunchingState.SHOOTR;
                 }
                 break;
-
+            case SHOOTRR:
+                if (hasShotRight() || launcherTime > timeShot) {
+                    shotsRight += 1;
+                    launcherTimer.reset();
+                }
+                if (shotsRight >= 2) {
+                    shootLeft();
+                    launchingState = LaunchingState.SHOOTL;
+                }
+                break;
+            case SHOOTLR:
+                if (hasShotLeft() || launcherTime > timeShot) {
+                    shotsLeft += 1;
+                    launcherTimer.reset();
+                    shootRight();
+                }
+                if (hasShotRight() || launcherTime > timeShot) {
+                    shotsRight += 1;
+                    launcherTimer.reset();
+                }
+                if (shotsRight >= 1) {
+                    launchingState = LaunchingState.SHOOT_BOTH;
+                }
+                break;
+            case SHOOTRL:
+                if (hasShotRight() || launcherTime > timeShot) {
+                    shotsRight += 1;
+                    launcherTimer.reset();
+                    shootLeft();
+                }
+                if (hasShotLeft()|| launcherTime > timeShot) {
+                    shotsLeft += 1;
+                    launcherTimer.reset();
+                }
+                if (shotsLeft >= 1) {
+                    launchingState = LaunchingState.SHOOT_BOTH;
+                    shootBoth();
+                }
+                break;
+            case SHOOT_BOTH:
+                if (hasShotRight() || launcherTime > timeShot) {
+                    launchingState = LaunchingState.SPIN;
+                    stillShooting = false;
+                    noShoot();
+                }
+                if (hasShotLeft() || launcherTime > timeShot) {
+                    launchingState = LaunchingState.SPIN;
+                    stillShooting = false;
+                    noShoot();
+                }
+                break;
+            case SHOOTL:
+                if (hasShotLeft() || launcherTime > timeShot) {
+                    launchingState = LaunchingState.SPIN;
+                    stillShooting = false;
+                    noShoot();
+                }
+                break;
+            case SHOOTR:
+                if (hasShotRight() || launcherTime > timeShot) {
+                    launchingState = LaunchingState.SPIN;
+                    stillShooting = false;
+                    noShoot();
+                }
+                break;
         }
     }
+
+
+    public LaunchingState launchingState() {
+        return launchingState;
+    }
+
+    public void setMotif(int m) {
+        motif = m;
+    }
+
+    public double getLeftErr() {
+        return launcher.getLeftErr();
+    }
+
+    public double getRightErr() {
+        return launcher.getRightErr();
+    }
+
+    public boolean isStillShooting() {
+        return stillShooting;
+    }
+
+//    public void setLRR
+
+    public double getLeftVelocity() {
+        return launcher.getLeftVelocity();
+    }
+
+    public double getRightVelocity() {
+        return launcher.getRightVelocity();
+    }
+
+    private double getErr() {
+        return Math.max(Math.abs(launcher.getLeftErr()), Math.abs(launcher.getRightErr()));
+    }
+
+
+    public double getLeftAcceleration() {
+        return launcher.getLeftAcceleration();
+    }
+
+    public double getBallsInRobot() {
+        return ballsInRobot;
+    }
+
+    public int getShotsLeft() {
+        return shotsLeft;
+    }
+
+    public int getShotsRight() {
+        return shotsRight;
+    }
+
+    private boolean hasShotLeft() {
+        if (getLeftAcceleration() > -1000) {
+            leftLauncherTimer.reset();
+        } else if (leftLauncherTime > 0.1 && getLeftAcceleration() < -1000) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean hasShotRight() {
+        if (getRightAcceleration() > -1000) {
+            rightLauncherTimer.reset();
+        } else if (rightLauncherTime > 0.1 && getRightAcceleration() < -1000) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean hasShotThree() {
+        if (getLeftAcceleration() > -1000) {
+            leftLauncherTimer.reset();
+        } else if (leftLauncherTime > 0.1 && getLeftAcceleration() < -1000) {
+            ballsInRobot -= 1;
+        }
+        if (getRightAcceleration() < -1000) {
+            rightLauncherTimer.reset();
+        } else if (rightLauncherTime > 0.1) {
+            ballsInRobot -= 1;
+        }
+        if (ballsInRobot == 0) {
+            return true;
+        }
+        return false;
+    }
+
+    public double getRightAcceleration() {
+        return launcher.getRightAcceleration();
+    }
+
 
     public boolean shootTwoThenOne() {
         switch (launchingState) {
@@ -259,8 +428,6 @@ public class Outtake {
                 }
                 break;
             case SHOOT1:
-
-
                 if (hasShotLeft()) {
                     shotsLeft += 1;
                 } else if (hasShotRight()) {
@@ -269,95 +436,5 @@ public class Outtake {
                 break;
         }
 
-    }
-
-    public LaunchingState launchingState() {
-        return launchingState;
-    }
-
-    public void setMotif(int m) {
-        motif = m;
-    }
-
-    public double getLeftErr() {
-        return launcher.getLeftErr();
-    }
-
-    public double getRightErr() {
-        return launcher.getRightErr();
-    }
-
-    public boolean isStillShooting() {
-        return stillShooting;
-    }
-
-//    public void setLRR
-
-    public double getLeftVelocity() {
-        return launcher.getLeftVelocity();
-    }
-
-    public double getRightVelocity() {
-        return launcher.getRightVelocity();
-    }
-
-    private double getErr() {
-        return Math.max(Math.abs(launcher.getLeftErr()), Math.abs(launcher.getRightErr()));
-    }
-
-
-    public double getLeftAcceleration() {
-        return launcher.getLeftAcceleration();
-    }
-
-    public double getBallsInRobot() {
-        return ballsInRobot;
-    }
-
-    public int getShotsLeft() {
-        return shotsLeft;
-    }
-
-    public int getShotsRight() {
-        return shotsRight;
-    }
-
-    private boolean hasShotLeft() {
-        if (getLeftAcceleration() > -1000) {
-            leftLauncherTimer.reset();
-        } else if (leftLauncherTime > 0.1 && getLeftAcceleration() < -1000) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean hasShotRight() {
-        if (getRightAcceleration() > -1000) {
-            rightLauncherTimer.reset();
-        } else if (rightLauncherTime > 0.1 && getRightAcceleration() < -1000) {
-            return true;
-        }
-        return false;
-    }
-
-    public boolean hasShotThree() {
-        if (getLeftAcceleration() > -1000) {
-            leftLauncherTimer.reset();
-        } else if (leftLauncherTime > 0.1 && getLeftAcceleration() < -1000) {
-            ballsInRobot -= 1;
-        }
-        if (getRightAcceleration() < -1000) {
-            rightLauncherTimer.reset();
-        } else if (rightLauncherTime > 0.1) {
-            ballsInRobot -= 1;
-        }
-        if (ballsInRobot == 0) {
-            return true;
-        }
-        return false;
-    }
-
-    public double getRightAcceleration() {
-        return launcher.getRightAcceleration();
     }
 }

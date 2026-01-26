@@ -27,6 +27,8 @@ public class BlueCloseNine extends OpMode {
 
     private int pathState = 0;
 
+    private int motif;
+
     private Outtake shotController;
 
     private Intake intakeController;
@@ -68,10 +70,15 @@ public class BlueCloseNine extends OpMode {
     }
 
     @Override
+    public void start() {
+        llController.start();
+    }
+
+    @Override
     public void loop() {
         follower.update();
         autonomousPathUpdate();
-        llController.update();
+
 
         telemetry.addData("path state", pathState);
         telemetry.addData("launching state", shotController.launchingState());
@@ -81,6 +88,7 @@ public class BlueCloseNine extends OpMode {
         telemetry.addData("heading", follower.getPose().getHeading());
         telemetry.addData("Tag ID", llController.getID());
         telemetry.addData("Valid", llController.getValid());
+        telemetry.addData("motif", motif);
         telemetry.update();
     }
 
@@ -89,13 +97,23 @@ public class BlueCloseNine extends OpMode {
             case 0:
                 follower.followPath(bluePaths.shoot1Path);
                 autoTimer.resetTimer();
+                shotController.setPositionGreen(1);
                 pathState = 1;
                 break;
             case 1:
+
+                if (motif == 0) {
+                    llController.update();
+                     if (llController.getValid()) {
+                         motif = llController.getID();
+                         shotController.setMotif(motif);
+                         llController.stop();
+                     }
+                }
                 if (!follower.isBusy()) {
                     autoTime = autoTimer.getElapsedTimeSeconds();
-
-                    if (autoTime > 2) {
+                    shotController.shootOrdered();
+                    if (shotController.isStillShooting()) {
                         follower.followPath(bluePaths.intake1Path);
                         intakeController.spin(1);
                         autoTimer.resetTimer();

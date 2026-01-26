@@ -26,7 +26,7 @@ public class Constants {
             .lateralZeroPowerAcceleration(-59.3570833)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.45, 0, 0.035, 0.02))
             .headingPIDFCoefficients(new PIDFCoefficients(1.5, 0.0, 0.05, 0.033))
-            .mass(10.53); // weigh robot
+            .mass(10.98); // weigh robot
     public static PathConstraints pathConstraints = new PathConstraints(
             0.99,
             100,
@@ -35,7 +35,7 @@ public class Constants {
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
-            .xVelocity(75.688613)
+            .xVelocity(76.98)
             .yVelocity(66.921075)
             .rightFrontMotorName("fr") //make sure these names match
             .rightRearMotorName("br")
