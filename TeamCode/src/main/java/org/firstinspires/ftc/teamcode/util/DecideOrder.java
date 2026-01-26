@@ -22,28 +22,30 @@ public class DecideOrder {
     4: RL
      */
     public int order(int motif, int positionGreen) {
-        if (motif == 21) {
-            if (positionGreen == 1) {
-                return 3;
-            } else  {
-                return 4;
-            }
-        } else if (motif == 22) {
-            if (positionGreen == 1) {
-                return 4;
-            } else if (positionGreen == 3) {
-                return 2;
-            } else {
-                return 3;
-            }
-        } else {
-            if (positionGreen == 1) {
-                return 2;
-            } else if (positionGreen == 2) {
-                return 1;
-            } else {
-                return 3;
-            }
+        if (positionGreen < 1 || positionGreen > 3) return -1;
+
+        switch (motif) {
+
+            case 21: // GPP: green must be first
+                if (positionGreen == 1) return 3; // LR: shoot L first (green), then R (purple)
+                if (positionGreen == 2) return 4; // RL: shoot R first (green), then L (purple)
+                return -1; // green in back can't be shot first with LL/RR/LR/RL patterns
+
+            case 22: // PGP: purple then green
+                if (positionGreen == 1) return 4; // RL: shoot R (purple), then L (green)
+                if (positionGreen == 2) return 3; // LR: shoot L (purple), then R (green)
+                // green back: first shot can be either purple (L or R),
+                // then you want green to be second (depends on your feeder behavior).
+                // Keep your old choice:
+                return 2; // RR (you can swap to 1 if your robot feeds green to left after first shot)
+
+            case 23: // PPG: two purples first
+                if (positionGreen == 1) return 2; // RR: purples are R + back -> clear purples first
+                if (positionGreen == 2) return 1; // LL
+                return 3; // green back: both L and R are purple, so LR (or RL) works
+
+            default:
+                return -1; // should never happen since limelight only outputs 21/22/23
         }
     }
 }

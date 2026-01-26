@@ -2,61 +2,76 @@ package org.firstinspires.ftc.teamcode.subsystem;
 
 import android.graphics.Color;
 
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 
 public class colorDetector {
-    private final NormalizedColorSensor colorSee;
 
-    // Re-used buffer to avoid allocating every loop
-    private final float[] hsv = new float[] {0f, 0f, 0f};
+    // Hardware names in the RC config
+    private final NormalizedColorSensor leftColorSensor;
+    private final NormalizedColorSensor rightColorSensor;
+
+    // Re-used buffers (no alloc per loop)
+    private final float[] leftHSV  = new float[] {0f, 0f, 0f};
+    private final float[] rightHSV = new float[] {0f, 0f, 0f};
+
+    // Return codes
+    public static final int NONE = 0;
+    public static final int GREEN = 1;
+    public static final int PURPLE = 2;
 
     public colorDetector(HardwareMap hardwareMap) {
-        colorSee = hardwareMap.get(NormalizedColorSensor.class, "colorDetector");
+        leftColorSensor  = hardwareMap.get(NormalizedColorSensor.class, "leftColorSensor");
+        rightColorSensor = hardwareMap.get(NormalizedColorSensor.class, "rightColorSensor");
     }
 
-    /** Updates internal HSV buffer from the sensor. Call once per loop before reading/printing. */
+    /** Call once per loop to update HSV buffers for BOTH sensors. */
     public void update() {
-        NormalizedRGBA colors = colorSee.getNormalizedColors();
-        Color.colorToHSV(colors.toColor(), hsv);  // hsv[0]=Hue (0..360), hsv[1]=Sat (0..1), hsv[2]=Val (0..1)
+        updateSensor(leftColorSensor, leftHSV);
+        updateSensor(rightColorSensor, rightHSV);
     }
 
-    public int detectBallColor() {
+    private void updateSensor(NormalizedColorSensor sensor, float[] hsvOut) {
+        NormalizedRGBA colors = sensor.getNormalizedColors();
+        Color.colorToHSV(colors.toColor(), hsvOut);
+    }
+
+    /** Returns NONE(0), GREEN(1), PURPLE(2) for the LEFT sensor. */
+    public int detectLeftBallColor() {
+        return detectFromHSV(leftHSV);
+    }
+
+    /** Returns NONE(0), GREEN(1), PURPLE(2) for the RIGHT sensor. */
+    public int detectRightBallColor() {
+        return detectFromHSV(rightHSV);
+    }
+
+    /** Shared classification logic. Tune thresholds here. */
+    private int detectFromHSV(float[] hsv) {
         float h = hsv[0]; // 0..360
         float s = hsv[1]; // 0..1
         float v = hsv[2]; // 0..1
 
-        // 1) Reject "no ball / too dark / too gray"
-        if (v < 0.12f || s < 0.25f) {
-            return 0;
-        }
+        // Reject "no ball / too dark / too gray"
+        if (v < 0.12f || s < 0.25f) return NONE;
 
-        // 2) Hue bands (tune these!)
-        // Green is typically ~90..150 in Android HSV
-        if (h >= 90f && h <= 150f) {
-            return 1;
-        }
+        // Green (~90..150)
+        if (h >= 90f && h <= 150f) return GREEN;
 
-        // Purple is typically ~250..310 (sometimes closer to 270..300)
-        if (h >= 250f && h <= 310f) {
-            return 2;
-        }
+        // Purple (~250..310)
+        if (h >= 250f && h <= 310f) return PURPLE;
 
-        return 0;
+        return NONE;
     }
 
-    // --- Separate getters (HSV values) ---
-    public float getHue() {
-        return hsv[0];
-    }
+    // --- Left HSV getters ---
+    public float getLeftHue() { return leftHSV[0]; }
+    public float getLeftSaturation() { return leftHSV[1]; }
+    public float getLeftValue() { return leftHSV[2]; }
 
-    public float getSaturation() {
-        return hsv[1];
-    }
-
-    public float getValue() {
-        return hsv[2];
-    }
+    // --- Right HSV getters ---
+    public float getRightHue() { return rightHSV[0]; }
+    public float getRightSaturation() { return rightHSV[1]; }
+    public float getRightValue() { return rightHSV[2]; }
 }
