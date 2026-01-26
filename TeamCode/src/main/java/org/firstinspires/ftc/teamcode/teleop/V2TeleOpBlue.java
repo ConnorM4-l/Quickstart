@@ -188,6 +188,7 @@ public class V2TeleOpBlue extends OpMode {
         telemetry.addData("heading", follower.getPose().getHeading());
         telemetry.addData("heading error", headingError);
         telemetry.addData("is aligned", isAligned());
+        telemetry.addData("In shotZone", inShotZone.isInShotZone());
         telemetry.addData("distanceFromGoal", distanceFromGoal());
         telemetry.update();
     }
