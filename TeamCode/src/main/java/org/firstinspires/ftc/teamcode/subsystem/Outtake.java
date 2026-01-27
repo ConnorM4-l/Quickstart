@@ -34,10 +34,17 @@ public class Outtake {
     private boolean prevShotL = false;
     private boolean prevShotR = false;
 
-    private boolean stillShooting = true;
+    private boolean stillShooting = false;
 
     private boolean prevLeft = false;
     private boolean left = false;
+
+    // ---------------- QUICK 3-SHOT MODE ----------------
+    private boolean quick3Active = false;        // state machine running
+    private boolean quick3IntakeStarted = false; // ensure intake start happens once
+    private int quick3Shots = 0;                // how many balls detected
+
+
 
     private boolean bothLeftDone = false;
     private boolean bothRightDone = false;
@@ -63,7 +70,8 @@ public class Outtake {
         SHOOTRL,
         SHOOTL,
         SHOOTR,
-        SHOOT_BOTH;
+        SHOOT_BOTH,
+        SHOOT_THREE_QUICK;
     }
     //get this as low as possible, grip tape?
     public static double timeShot = 3;
@@ -82,8 +90,8 @@ public class Outtake {
         leftLauncherTimer.reset();
         rightLauncherTimer.reset();
 
-        motif = 21;
-        positionGreen = 1;
+        motif = 0;
+        positionGreen = 0;
     }
 
     public void update(double distanceFromGoal) {
@@ -130,7 +138,7 @@ public class Outtake {
 
 
     public void shootOrdered() {
-        int order = new DecideOrder().order(motif, positionGreen);
+
         switch (launchingState) {
 
             case SPIN:
@@ -141,30 +149,41 @@ public class Outtake {
                     shotsLeft = 0;
                     shotsRight = 0;
 
-                    // order comes from DecideOrder.order(motif, positionGreen)
+                    prevShotL = false;
+                    prevShotR = false;
+
+                    int order = new DecideOrder().order(motif, positionGreen);
+
                     if (order == -1) {
-                        // SHOOT_BOTH = run both CR servos continuously; stop after 3 shot events
-                        totalShots = 0;          // IMPORTANT reset
+                        // shoot all 3, order doesn't matter
+                        totalShots = 0;
                         shootBoth();
+                        intake.spin(1);
                         launcherTimer.reset();
                         launchingState = LaunchingState.SHOOT_BOTH;
 
                     } else if (order == 1) { // LL
+                        // first left shot: do NOT need intake yet
+                        intake.spin(0);
                         shootLeft();
                         launcherTimer.reset();
                         launchingState = LaunchingState.SHOOTLL;
 
                     } else if (order == 2) { // RR
+                        // first right shot: do NOT need intake yet
+                        intake.spin(0);
                         shootRight();
                         launcherTimer.reset();
                         launchingState = LaunchingState.SHOOTRR;
 
                     } else if (order == 3) { // LR
+                        intake.spin(0);
                         shootLeft();
                         launcherTimer.reset();
                         launchingState = LaunchingState.SHOOTLR;
 
                     } else if (order == 4) { // RL
+                        intake.spin(0);
                         shootRight();
                         launcherTimer.reset();
                         launchingState = LaunchingState.SHOOTRL;
@@ -176,18 +195,26 @@ public class Outtake {
                 if (enteredState()) {
                     launcherTimer.reset();
                     shotsLeft = 0;
+                    // second left ball comes from back -> intake must run after first shot
                 }
 
-                if (hasShotLeft() || launcherTime > timeShot) {
-                    shotsLeft++;
+                // FIRST left shot finishes -> start intake + command SECOND left shot
+                if (shotsLeft == 0 && (shotLeftEvent() || launcherTime > timeShot)) {
+                    shotsLeft = 1;
                     launcherTimer.reset();
-                    if (shotsLeft < 2) shootLeft();
+                    intake.spin(1);      // NEW: pull back ball to left
+                    shootLeft();         // command second left shot
                 }
-
-                if (shotsLeft >= 2) {
-                    shootRight();
+                // SECOND left shot finishes -> go to SHOOT_BOTH for final ball
+                else if (shotsLeft == 1 && (shotLeftEvent() || launcherTime > timeShot)) {
+                    shotsLeft = 2;
                     launcherTimer.reset();
-                    launchingState = LaunchingState.SHOOTR;
+
+                    totalShots = 2;      // already fired 2 balls
+                    shootBoth();         // run both feeders for last ball
+                    intake.spin(1);      // keep pushing back ball forward
+                    launcherTimer.reset();
+                    launchingState = LaunchingState.SHOOT_BOTH;
                 }
                 break;
 
@@ -195,18 +222,26 @@ public class Outtake {
                 if (enteredState()) {
                     launcherTimer.reset();
                     shotsRight = 0;
+                    // second right ball comes from back -> intake must run after first shot
                 }
 
-                if (hasShotRight() || launcherTime > timeShot) {
-                    shotsRight++;
+                // FIRST right shot finishes -> start intake + command SECOND right shot
+                if (shotsRight == 0 && (shotRightEvent() || launcherTime > timeShot)) {
+                    shotsRight = 1;
                     launcherTimer.reset();
-                    if (shotsRight < 2) shootRight();
+                    intake.spin(1);      // NEW: pull back ball to right
+                    shootRight();        // command second right shot
                 }
-
-                if (shotsRight >= 2) {
-                    shootLeft();
+                // SECOND right shot finishes -> go to SHOOT_BOTH for final ball
+                else if (shotsRight == 1 && (shotRightEvent() || launcherTime > timeShot)) {
+                    shotsRight = 2;
                     launcherTimer.reset();
-                    launchingState = LaunchingState.SHOOTL;
+
+                    totalShots = 2;      // already fired 2 balls
+                    shootBoth();
+                    intake.spin(1);
+                    launcherTimer.reset();
+                    launchingState = LaunchingState.SHOOT_BOTH;
                 }
                 break;
 
@@ -217,19 +252,20 @@ public class Outtake {
                     shotsRight = 0;
                 }
 
-                // First: wait for left shot to complete, then command right
-                if (shotsLeft == 0 && (hasShotLeft() || launcherTime > timeShot)) {
+                // wait for left shot to complete, then command right
+                if (shotsLeft == 0 && (shotLeftEvent() || launcherTime > timeShot)) {
                     shotsLeft = 1;
                     launcherTimer.reset();
                     shootRight();
                 }
-                // Then: wait for right shot to complete, then go to SHOOT_BOTH (3rd ball, order doesn't matter)
-                else if (shotsLeft == 1 && shotsRight == 0 && (hasShotRight() || launcherTime > timeShot)) {
+                // wait for right shot to complete, then go to SHOOT_BOTH for 3rd
+                else if (shotsLeft == 1 && shotsRight == 0 && (shotRightEvent() || launcherTime > timeShot)) {
                     shotsRight = 1;
                     launcherTimer.reset();
 
-                    totalShots = 0;      // we're going to shoot 3 balls in SHOOT_BOTH mode
-                    shootBoth();         // spins both CR servos continuously
+                    totalShots = 2;
+                    shootBoth();
+                    intake.spin(1);          // push the back ball for the last shot
                     launcherTimer.reset();
                     launchingState = LaunchingState.SHOOT_BOTH;
                 }
@@ -242,19 +278,20 @@ public class Outtake {
                     shotsRight = 0;
                 }
 
-                // First: wait for right shot to complete, then command left
-                if (shotsRight == 0 && (hasShotRight() || launcherTime > timeShot)) {
+                // wait for right shot to complete, then command left
+                if (shotsRight == 0 && (shotRightEvent() || launcherTime > timeShot)) {
                     shotsRight = 1;
                     launcherTimer.reset();
                     shootLeft();
                 }
-                // Then: wait for left shot to complete, then go to SHOOT_BOTH (3rd ball, order doesn't matter)
-                else if (shotsRight == 1 && shotsLeft == 0 && (hasShotLeft() || launcherTime > timeShot)) {
+                // wait for left shot to complete, then go to SHOOT_BOTH for 3rd
+                else if (shotsRight == 1 && shotsLeft == 0 && (shotLeftEvent() || launcherTime > timeShot)) {
                     shotsLeft = 1;
                     launcherTimer.reset();
 
-                    totalShots = 0;
+                    totalShots = 2;
                     shootBoth();
+                    intake.spin(1);
                     launcherTimer.reset();
                     launchingState = LaunchingState.SHOOT_BOTH;
                 }
@@ -263,26 +300,28 @@ public class Outtake {
             case SHOOT_BOTH:
                 if (enteredState()) {
                     launcherTimer.reset();
-                    totalShots = 0;     // IMPORTANT reset
+                    // totalShots is NOT reset here (LL/RR/LR/RL enter with totalShots=2)
+                    // intake should already be on, but keep it on
+                    intake.spin(1);
                 }
 
-                boolean lEvt = shotLeftEvent();   // edge-detect
-                boolean rEvt = shotRightEvent();  // edge-detect
+                boolean lEvt = shotLeftEvent();
+                boolean rEvt = shotRightEvent();
 
                 if (lEvt) totalShots++;
                 if (rEvt) totalShots++;
 
-                // Stop after 3 total balls have been shot
                 if (totalShots >= 3) {
                     noShoot();
+                    intake.spin(0);
                     launchingState = LaunchingState.SPIN;
                     stillShooting = false;
                     break;
                 }
 
-                // Safety timeout (jam / missed sensor events)
                 if (launcherTime > (timeShot * 3.0)) {
                     noShoot();
+                    intake.spin(0);
                     launchingState = LaunchingState.SPIN;
                     stillShooting = false;
                 }
@@ -291,25 +330,124 @@ public class Outtake {
             case SHOOTL:
                 if (enteredState()) launcherTimer.reset();
 
-                if (hasShotLeft() || launcherTime > timeShot) {
+                if (shotLeftEvent() || launcherTime > timeShot) {
                     launchingState = LaunchingState.SPIN;
                     stillShooting = false;
                     noShoot();
+                    intake.spin(0);
                 }
                 break;
 
             case SHOOTR:
                 if (enteredState()) launcherTimer.reset();
 
-                if (hasShotRight() || launcherTime > timeShot) {
+                if (shotRightEvent() || launcherTime > timeShot) {
                     launchingState = LaunchingState.SPIN;
                     stillShooting = false;
                     noShoot();
+                    intake.spin(0);
                 }
                 break;
         }
-
     }
+
+    public void startQuick3() {
+        if (quick3Active) return;      // start only once
+
+        // reset counters + edge detect so we don't double-count old events
+        quick3Active = true;
+        quick3IntakeStarted = false;
+        quick3Shots = 0;
+
+        prevShotL = false;
+        prevShotR = false;
+
+        // start feeders NOW, intake stays off until first shot is detected
+        shootBoth();
+        intake.spin(0);
+        launcherTimer.reset();
+    }
+
+    public void runQuick3() {
+        if (!quick3Active) return;
+
+        // count shot events
+        boolean lEvt = shotLeftEvent();
+        boolean rEvt = shotRightEvent();
+
+        if (lEvt) quick3Shots++;
+        if (rEvt) quick3Shots++;
+
+        // after FIRST recorded shot, start intake ONCE
+        if (!quick3IntakeStarted && quick3Shots >= 1) {
+            intake.spin(1);
+            quick3IntakeStarted = true;
+        }
+
+        // finish after 3 shots
+        if (quick3Shots >= 3) {
+            stopQuick3();
+            return;
+        }
+
+        // safety timeout (optional): prevent infinite spin if sensors miss
+        double t = launcherTimer.seconds();
+        if (t > (timeShot * 3.0)) {
+            stopQuick3();
+        }
+    }
+
+    public void stopQuick3() {
+        if (!quick3Active) return;  // stop only once
+
+        noShoot();
+        intake.spin(0);
+
+        quick3Active = false;
+    }
+
+    public void cancelQuick3() {
+        // same as stop, but safe to call anytime
+        stopQuick3();
+    }
+
+    public boolean isQuick3Active() {
+        return quick3Active;
+    }
+
+
+    public void cancelAllShooting() {
+        // Stop any feeder/intake motion immediately
+        noShoot();
+        intake.spin(0);
+
+        // Cancel Quick3 mode
+        quick3Active = false;
+        quick3IntakeStarted = false;
+        quick3Shots = 0;
+
+        // Cancel Ordered mode / any other shooting state machine
+        stillShooting = false;
+        launchingState = LaunchingState.SPIN;
+        prevLaunchingState = null;
+
+        // Clear shot edge-detect so old sensor states don't count as new shots
+        prevShotL = false;
+        prevShotR = false;
+
+        // Clear counters
+        shotsLeft = 0;
+        shotsRight = 0;
+        totalShots = 0;
+
+        // Reset timers so you don't instantly timeout / instantly trigger hasShot logic
+        launcherTimer.reset();
+        leftLauncherTimer.reset();
+        rightLauncherTimer.reset();
+    }
+
+
+
 
 
     public LaunchingState launchingState() {
