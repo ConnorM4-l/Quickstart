@@ -67,6 +67,11 @@ public class V2TeleOpBlue extends OpMode {
     private boolean rtHeld = false;
     private boolean rtPrevHeld = false;
 
+    // -------------------- Driver1 X/Y press edge detect (toggle manualDrive) --------------------
+    private boolean xPrev = false;
+    private boolean yPrev = false;
+
+
     // -------------------- LT tap/hold for feeder reverse --------------------
     private boolean ltHeld = false;
     private double ltPressStartTime = 0.0;
@@ -139,7 +144,7 @@ public class V2TeleOpBlue extends OpMode {
         updateIntakeControls();
 
         // ---- ManualDrive is now forced by X/Y ----
-        updateManualDriveXY();
+        updateManualDriveXYToggle();
 
         // ---- ManualShot/AutoShot is now toggled by START ----
         updateManualShotToggleStart();
@@ -185,23 +190,28 @@ public class V2TeleOpBlue extends OpMode {
         }
     }
 
-    private void updateManualDriveXY() {
-        // Driver1 X forces manualDrive ON (manual turning)
-        if (gamepad1.x) {
-            // Don’t let X fight an active auto cycle
-            if (autoCycleState == AutoCycleState.IDLE) {
-                manualDrive = true;
-            }
+    // X sets Manual Drive ON, Y sets Manual Drive OFF (tap-to-toggle behavior)
+    private void updateManualDriveXYToggle() {
+        // Don’t allow changes during the auto cycle (aiming/shooting)
+        if (autoCycleState != AutoCycleState.IDLE) {
+            xPrev = gamepad1.x;
+            yPrev = gamepad1.y;
+            return;
         }
 
-        // Driver1 Y forces manualDrive OFF (heading-lock turning)
-        if (gamepad1.y) {
-            // During auto cycle we already own manualDrive; outside it, Y can force heading lock
-            if (autoCycleState == AutoCycleState.IDLE) {
-                manualDrive = false;
-            }
-        }
+        boolean xNow = gamepad1.x;
+        boolean yNow = gamepad1.y;
+
+        boolean xPressed = xNow && !xPrev;
+        boolean yPressed = yNow && !yPrev;
+
+        xPrev = xNow;
+        yPrev = yNow;
+
+        if (xPressed) manualDrive = true;   // manual turn (right stick)
+        if (yPressed) manualDrive = false;  // heading lock (PID)
     }
+
 
     private void updateManualShotToggleStart() {
         boolean startNow = gamepad1.start;
