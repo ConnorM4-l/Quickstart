@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-@TeleOp(name = "RightLauncherTesting")
+@TeleOp
 public class RightLauncherTesting extends OpMode {
     private DcMotorEx rightLauncher = null;
     @Override

@@ -23,7 +23,7 @@ import org.firstinspires.ftc.teamcode.subsystem.Outtake;
 import org.firstinspires.ftc.teamcode.subsystem.logitechCamera;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
-@Autonomous(name = "Advanced auto")
+@Autonomous
 public class V2AutoBlue extends OpMode {
     PathChain Path1;
     PathChain Path2;

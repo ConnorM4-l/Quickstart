@@ -20,7 +20,7 @@ import org.firstinspires.ftc.teamcode.subsystem.Outtake;
 import org.firstinspires.ftc.teamcode.subsystem.limelight;
 
 @Configurable
-@TeleOp(name = "AimTesting")
+@TeleOp
 public class AimTesting extends OpMode {
 
     private TelemetryManager telemetryM;

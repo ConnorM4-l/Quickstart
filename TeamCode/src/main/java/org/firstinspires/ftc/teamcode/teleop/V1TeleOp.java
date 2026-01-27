@@ -12,7 +12,7 @@ import org.firstinspires.ftc.teamcode.subsystem.Outtake;
 import org.firstinspires.ftc.teamcode.subsystem.drivetrain;
 import org.firstinspires.ftc.teamcode.subsystem.TripleShot;
 
-@TeleOp(name = "V1TeleOp")
+@TeleOp
 public class V1TeleOp extends OpMode {
 
     private DcMotor bl = null;

@@ -23,11 +23,14 @@ public class V2TeleOpBlue extends OpMode {
     private PIDFController controller;
     private Pose startingPose;
 
-    // Goal pose (used for heading lock in auto-aim)
     private Pose targetPose = new Pose(12.844, 134.239, 0);
 
     private double headingError = 0;
     private double headingGoal = 0;
+
+    // Manual vs heading-lock turning
+    // true = right stick rotates, false = heading PID rotates
+    private boolean manualDrive = true;
 
     // -------------------- Subsystems --------------------
     private Outtake shotController;
@@ -35,46 +38,47 @@ public class V2TeleOpBlue extends OpMode {
     private RobotContext robotContext;
     private colorDetector ballColors;
 
-    // -------------------- Driver State --------------------
-    // manualDrive=true  -> full manual rotation (right stick)
-    // manualDrive=false -> auto heading lock to goal (PID turn)
-    private boolean manualDrive = true;
+    // -------------------- Modes --------------------
+    // true = direct feeder control, false = auto shot (quick/ordered)
+    private boolean manualShot = true;
 
-    // Intake: A toggles forward on/off, B is hold reverse
-    private boolean intakeToggledOn = false;
-    private boolean aPrev = false;
+    private enum ShotMode { QUICK, ORDERED }
+    private ShotMode shotMode = ShotMode.QUICK;   // driver2 toggles this
 
-    // Driver 2 selected motif (Limelight tag meaning): 21=GPP, 22=PGP, 23=PPG
-    private int motif = 23;          // default motif
+    // -------------------- Auto Shot Flow --------------------
+    // RT press #1 -> autoAim ON (manualDrive=false)
+    // RT press #2 -> start shoot (quick or ordered), returns to manualDrive=true when done
+    private enum AutoCycleState { IDLE, AIMING, SHOOTING }
+    private AutoCycleState autoCycleState = AutoCycleState.IDLE;
+
+    // Driver 2 selected order (Limelight motif): 21=GPP, 22=PGP, 23=PPG
+    private int motif = 23;
     private int positionGreen = 0;   // 1 left, 2 right, 3 back, 0 unknown
 
-    // Shot modes:
-    // QUICK   -> 3-ball burst, unordered (fast cycle)
-    // ORDERED -> ordered routine based on motif + green position
-    private enum ShotMode { QUICK, ORDERED }
-    private ShotMode shotMode = ShotMode.QUICK; // default
-    private boolean modeTogglePrev = false;      // edge detect for driver2 mode toggle
-
-    // Driver 1 right-trigger two-press cycle:
-    // 1st press -> auto-aim heading lock
-    // 2nd press -> shoot (quick3 or ordered), then return to manual
-    private enum AimState { MANUAL, AUTO_AIM_READY, SHOOTING }
-    private AimState aimState = AimState.MANUAL;
+    // -------------------- Intake Toggle --------------------
+    private boolean intakeOn = false;
+    private boolean aPrev = false;
 
     // -------------------- Timers --------------------
     private Timer teleOpTimer1;
     private double teleOpTime;
 
-    // -------------------- Trigger Edge / Debounce --------------------
-    private boolean rtHeld = false;      // debounced press
-    private boolean rtPrevHeld = false;  // previous loop
+    // -------------------- RT edge detect (gp1) --------------------
+    private boolean rtHeld = false;
+    private boolean rtPrevHeld = false;
 
-    // Left-trigger: tap = stop feeders, hold = reverse feeders
+    // -------------------- LT tap/hold for feeder reverse --------------------
     private boolean ltHeld = false;
     private double ltPressStartTime = 0.0;
     private static final double LT_PRESS_TH = 0.55;
     private static final double LT_RELEASE_TH = 0.45;
     private static final double LT_HOLD_SEC = 0.30;
+
+    // -------------------- START edge detect (manualShot toggle) --------------------
+    private boolean startPrev = false;
+
+    // -------------------- Driver2 shotMode toggle edge detect --------------------
+    private boolean modeTogglePrev = false;
 
     @Override
     public void init() {
@@ -83,11 +87,11 @@ public class V2TeleOpBlue extends OpMode {
         robotContext = new RobotContext();
         startingPose = robotContext.getStartingPose();
 
-        controller = new PIDFController(new PIDFCoefficients(1.5, 0.0, 0.05, 0.033));
-        controller.setCoefficients(new PIDFCoefficients(1.5, 0.0, 0.05, 0.033));
-
         follower.setStartingPose(startingPose);
         follower.update();
+
+        controller = new PIDFController(new PIDFCoefficients(1.5, 0.0, 0.05, 0.033));
+        controller.setCoefficients(new PIDFCoefficients(1.5, 0.0, 0.05, 0.033));
 
         intakeController = new Intake(hardwareMap);
         shotController = new Outtake(hardwareMap);
@@ -100,13 +104,13 @@ public class V2TeleOpBlue extends OpMode {
     public void start() {
         follower.startTeleopDrive();
 
-        aimState = AimState.MANUAL;
-        manualDrive = true;
+        manualDrive = true;                 // default: manual turning
+        manualShot = true;                  // default: manual feeder control
+        autoCycleState = AutoCycleState.IDLE;
 
-        intakeToggledOn = false;
+        intakeOn = false;
         intakeController.spin(0);
 
-        // Start clean: no lingering state machines or servo commands
         shotController.cancelAllShooting();
     }
 
@@ -114,181 +118,244 @@ public class V2TeleOpBlue extends OpMode {
     public void loop() {
         follower.update();
 
-        // Keep outtake updated each loop (shot accel detection + flywheel control)
-        shotController.update(distanceFromGoal());
-
-        // Update heading controller error for auto-aim mode
+        // Keep our heading goal updated every loop
         setHeadingGoal();
         controller.updateError(getHeadingError());
 
         teleOpTime = teleOpTimer1.getElapsedTimeSeconds();
 
-        // Driver 2: toggle shot mode QUICK <-> ORDERED (and hard-cancel if switching mid-action)
+        // ---- Driver2 toggles QUICK/ORDERED shot mode ----
         updateShotModeToggle();
 
-        // Driver 2: motif selection (21/22/23)
-        updateMotifSelection();
+        // ---- Driver2 selects motif (ordered shooting) ----
+        updateMotifSelect();
 
-        // Driver 1: intake controls (A toggle forward, B hold reverse)
-        updateIntakeControls();
-
-        // Driver 1: RT two-press cycle (aim then shoot)
-        updateAimAndShootCycle();
-
-        // Translation always manual; rotation depends on manualDrive
-        if (!manualDrive) {
-            // Auto heading lock to the goal while we translate manually
-            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, controller.run(), true);
-        } else {
-            // Full manual: right stick controls rotation
-            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+        // ---- Emergency cancel (BACK) ----
+        if (gamepad1.back) {
+            cancelEverythingToManual();
         }
 
-        // Left-trigger behavior (tap -> stop feeders, hold -> reverse feeders)
-        updateLeftTriggerShootBehavior();
+        // ---- Intake: A toggles forward ON/OFF, B holds reverse ----
+        updateIntakeControls();
 
-        telemetry.addData("AimState", aimState);
-        telemetry.addData("ShotMode", shotMode);
+        // ---- ManualDrive is now forced by X/Y ----
+        updateManualDriveXY();
+
+        // ---- ManualShot/AutoShot is now toggled by START ----
+        updateManualShotToggleStart();
+
+        // ---- Apply drive command ----
+        applyDrive();
+
+        // ---- Shooting control ----
+        updateShooting();
+
+        // ---- Feeder reverse LT tap/hold (still works in any mode) ----
+        updateLeftTriggerFeedReverse();
+
         telemetry.addData("manualDrive", manualDrive);
-        telemetry.addData("intakeToggledOn", intakeToggledOn);
+        telemetry.addData("manualShot", manualShot);
+        telemetry.addData("shotMode", shotMode);
+        telemetry.addData("autoCycleState", autoCycleState);
         telemetry.addData("motif", motif);
         telemetry.addData("positionGreen", positionGreen);
-        telemetry.addData("headingGoal", headingGoal);
         telemetry.addData("headingError", headingError);
-        telemetry.addData("distanceFromGoal", distanceFromGoal());
         telemetry.update();
     }
 
-    // -------------------- Driver 1: Aim/Shoot Cycle --------------------
-    private void updateAimAndShootCycle() {
-        boolean rtPressed = rightTriggerPressedEvent();
+    // ============================ DRIVE ============================
 
-        switch (aimState) {
-            case MANUAL:
-                // RT press #1: enter auto-aim (heading lock)
-                if (rtPressed) {
-                    manualDrive = false;
-                    aimState = AimState.AUTO_AIM_READY;
-
-                    // Safety: clear any leftover shooting before aiming
-                    shotController.cancelAllShooting();
-                }
-                break;
-
-            case AUTO_AIM_READY:
-                // RT press #2: start the selected shooting mode
-                if (rtPressed) {
-                    aimState = AimState.SHOOTING;
-
-                    if (shotMode == ShotMode.QUICK) {
-                        // Quick 3-ball burst, unordered
-                        shotController.startQuick3();
-                    } else {
-                        // Ordered: sample green position once at the start of the routine
-                        ballColors.update();
-                        positionGreen = ballColors.getGreenPosition();
-
-                        shotController.setMotif(motif);
-                        shotController.setPositionGreen(positionGreen);
-
-                        // Ordered routine runs in SHOOTING until Outtake says we're done
-                    }
-                }
-                break;
-
-            case SHOOTING:
-                // During SHOOTING the Outtake owns feeders + intake so we don't fight it
-                if (shotMode == ShotMode.QUICK) {
-                    shotController.runQuick3();
-                    if (!shotController.isQuick3Active()) {
-                        finishShootingReturnToManual();
-                    }
-                } else {
-                    shotController.shootOrdered();
-                    if (!shotController.isStillShooting()) {
-                        finishShootingReturnToManual();
-                    }
-                }
-                break;
+    private void applyDrive() {
+        if (!manualDrive) {
+            // Heading lock turning
+            follower.setTeleOpDrive(
+                    -gamepad1.left_stick_y,
+                    -gamepad1.left_stick_x,
+                    controller.run(),
+                    true
+            );
+        } else {
+            // Manual turning
+            follower.setTeleOpDrive(
+                    -gamepad1.left_stick_y,
+                    -gamepad1.left_stick_x,
+                    -gamepad1.right_stick_x,
+                    true
+            );
         }
     }
 
-    private void finishShootingReturnToManual() {
-        // Ensure everything is off/clean for driver control
-        shotController.cancelAllShooting();
+    private void updateManualDriveXY() {
+        // Driver1 X forces manualDrive ON (manual turning)
+        if (gamepad1.x) {
+            // Don’t let X fight an active auto cycle
+            if (autoCycleState == AutoCycleState.IDLE) {
+                manualDrive = true;
+            }
+        }
 
-        // Back to manual drive
-        manualDrive = true;
-        aimState = AimState.MANUAL;
-
-        // Intake toggle state is preserved; intake output resumes next loop (unless B is held)
+        // Driver1 Y forces manualDrive OFF (heading-lock turning)
+        if (gamepad1.y) {
+            // During auto cycle we already own manualDrive; outside it, Y can force heading lock
+            if (autoCycleState == AutoCycleState.IDLE) {
+                manualDrive = false;
+            }
+        }
     }
 
-    // -------------------- Driver 1: Intake Controls --------------------
-    private void updateIntakeControls() {
-        // Outtake controls intake while shooting; don't overwrite it here
-        if (aimState == AimState.SHOOTING) return;
+    private void updateManualShotToggleStart() {
+        boolean startNow = gamepad1.start;
+        boolean startPressed = startNow && !startPrev;
+        startPrev = startNow;
 
-        // B is hold reverse intake (overrides toggle while held)
+        if (!startPressed) return;
+
+        // Flip between manual feeder control and auto shot routines
+        manualShot = !manualShot;
+
+        // If we just switched INTO manualShot, kill any auto routine immediately
+        if (manualShot) {
+            autoCycleState = AutoCycleState.IDLE;
+            manualDrive = true;
+            shotController.cancelAllShooting();
+        } else {
+            // Switched INTO auto shot mode: also hard-cancel any manual feeder hold
+            shotController.noShoot();
+            // Keep manualDrive as-is; driver will use RT press #1 to enter aiming (manualDrive=false)
+        }
+    }
+
+    // ============================ INTAKE ============================
+
+    private void updateIntakeControls() {
+        // B is hold-to-reverse (unjam/spit)
         if (gamepad1.b) {
             intakeController.spin(-1);
             return;
         }
 
-        // A toggles intake forward ON/OFF on press
+        // A toggles forward intake ON/OFF
         boolean aNow = gamepad1.a;
         boolean aPressed = aNow && !aPrev;
         aPrev = aNow;
 
         if (aPressed) {
-            intakeToggledOn = !intakeToggledOn;
+            intakeOn = !intakeOn;
         }
 
-        intakeController.spin(intakeToggledOn ? 1 : 0);
+        intakeController.spin(intakeOn ? 1 : 0);
     }
 
-    // -------------------- Driver 2: Mode Toggle (QUICK <-> ORDERED) --------------------
-    private void updateShotModeToggle() {
-        // Mode toggle button: gamepad2.a
-        boolean btnNow = gamepad2.a;
-        boolean pressed = btnNow && !modeTogglePrev;
-        modeTogglePrev = btnNow;
+    // ============================ SHOOTING ============================
 
-        if (!pressed) return;
+    private void updateShooting() {
+        // Manual feeder mode: RT=both, LB=left, RB=right (all while held).
+        // Alignment gate + D-pad left override remain.
+        if (manualShot) {
+            // If we’re mid auto-cycle, manualShot should not run the feeders
+            if (autoCycleState != AutoCycleState.IDLE) {
+                shotController.noShoot();
+                return;
+            }
 
-        // Flip mode
-        shotMode = (shotMode == ShotMode.QUICK) ? ShotMode.ORDERED : ShotMode.QUICK;
+            boolean okToShoot = (Math.abs(getHeadingError()) < 0.1) || gamepad1.dpad_left;
 
-        // Hard reset anything mid-cycle so we never mix state machines
-        shotController.cancelAllShooting();
-        aimState = AimState.MANUAL;
+            if (okToShoot) {
+                if (gamepad1.right_trigger > 0.5) {
+                    shotController.shootBoth();
+                } else if (gamepad1.left_bumper) {
+                    shotController.shootLeft();
+                } else if (gamepad1.right_bumper) {
+                    shotController.shootRight();
+                } else {
+                    shotController.noShoot();
+                }
+            } else {
+                shotController.noShoot();
+            }
+
+            return;
+        }
+
+        // Auto-shot branch (manualShot == false):
+        // RT press 1: enter aiming (manualDrive=false)
+        // RT press 2: start shooting (quick or ordered)
+        // After shooting finishes: return to manualDrive=true and IDLE
+        boolean rtPressed = rightTriggerPressedEvent();
+
+        switch (autoCycleState) {
+            case IDLE:
+                if (rtPressed) {
+                    // enter autoAim
+                    manualDrive = false;
+                    autoCycleState = AutoCycleState.AIMING;
+                }
+                break;
+
+            case AIMING:
+                if (rtPressed) {
+                    // start shooting
+                    beginAutoShooting();
+                    autoCycleState = AutoCycleState.SHOOTING;
+                }
+                break;
+
+            case SHOOTING:
+                // run whichever shot routine is selected
+                if (shotMode == ShotMode.QUICK) {
+                    shotController.runQuick3();
+                    if (!shotController.isQuick3Active()) {
+                        finishAutoCycleToManual();
+                    }
+                } else {
+                    shotController.shootOrdered();
+                    if (!shotController.isStillShooting()) {
+                        shotController.noShoot();
+                        finishAutoCycleToManual();
+                    }
+                }
+                break;
+        }
+    }
+
+    private void beginAutoShooting() {
+        // Stop direct feeder holds before the state machine takes over
+        shotController.noShoot();
+
+        if (shotMode == ShotMode.QUICK) {
+            // quick burst (unordered)
+            shotController.startQuick3();
+        } else {
+            // ordered: read color, set motif + position
+            ballColors.update();
+            positionGreen = ballColors.getGreenPosition();
+
+            shotController.setMotif(motif);
+            shotController.setPositionGreen(positionGreen);
+            // shootOrdered() advances starting next loop
+        }
+    }
+
+    private void finishAutoCycleToManual() {
         manualDrive = true;
-
-        gamepad2.rumble(150);
+        autoCycleState = AutoCycleState.IDLE;
     }
 
-    // -------------------- Driver 2: Motif Selection --------------------
-    private void updateMotifSelection() {
-        // gp2.x -> 21 (GPP)
-        // gp2.y -> 22 (PGP)
-        // gp2.b -> 23 (PPG)
-        if (gamepad2.xWasPressed()) {
-            motif = 21;
-            gamepad2.rumble(120);
-        } else if (gamepad2.yWasPressed()) {
-            motif = 22;
-            gamepad2.rumble(120);
-        } else if (gamepad2.bWasPressed()) {
-            motif = 23;
-            gamepad2.rumble(120);
-        }
+    private void cancelEverythingToManual() {
+        // Hard stop everything that could keep moving hardware
+        shotController.cancelAllShooting();
+        intakeOn = false;
+        intakeController.spin(0);
+
+        // Return to manual
+        manualDrive = true;
+        autoCycleState = AutoCycleState.IDLE;
+        manualShot = true; // safest default after a hard cancel
     }
 
-    // -------------------- Left Trigger: tap stop, hold reverse --------------------
-    private void updateLeftTriggerShootBehavior() {
-        // Don’t interfere while Outtake is actively shooting
-        if (aimState == AimState.SHOOTING) return;
+    // ============================ FEEDER REVERSE (LT tap/hold) ============================
 
+    private void updateLeftTriggerFeedReverse() {
         double lt = gamepad1.left_trigger;
 
         if (!ltHeld && lt > LT_PRESS_TH) {
@@ -298,48 +365,85 @@ public class V2TeleOpBlue extends OpMode {
             double heldSec = teleOpTime - ltPressStartTime;
             ltHeld = false;
 
-            // Tap = stop feeders
             if (heldSec < LT_HOLD_SEC) {
-                shotController.noShoot();
+                shotController.noShoot(); // tap = stop feeding
             }
         }
 
-        // Hold = reverse feeders
         if (ltHeld && (teleOpTime - ltPressStartTime) >= LT_HOLD_SEC) {
-            shotController.reverseShoot();
+            shotController.reverseShoot(); // hold = reverse feeders
         }
     }
 
-    // -------------------- RT Press Event (debounced) --------------------
-    private boolean rightTriggerPressedEvent() {
+    // ============================ DRIVER 2: MODE + MOTIF ============================
+
+    private void updateShotModeToggle() {
+        // Driver2 A toggles QUICK <-> ORDERED (only when gp2 RT is not held)
+        if (gamepad2.right_trigger > 0.5) return;
+
+        boolean btnNow = gamepad2.a;
+        boolean pressed = btnNow && !modeTogglePrev;
+        modeTogglePrev = btnNow;
+
+        if (pressed) {
+            shotMode = (shotMode == ShotMode.QUICK) ? ShotMode.ORDERED : ShotMode.QUICK;
+
+            // Cancel any active cycle so we don’t mix state machines mid-flight
+            autoCycleState = AutoCycleState.IDLE;
+            manualDrive = true;
+            shotController.cancelAllShooting();
+        }
+    }
+
+    private void updateMotifSelect() {
+        // gp2.x -> 21 (GPP), gp2.y -> 22 (PGP), gp2.b -> 23 (PPG)
+        if (gamepad2.xWasPressed()) {
+            motif = 21;
+            gamepad2.rumble(150);
+        } else if (gamepad2.yWasPressed()) {
+            motif = 22;
+            gamepad2.rumble(150);
+        } else if (gamepad2.bWasPressed()) {
+            motif = 23;
+            gamepad2.rumble(150);
+        }
+
+        // Driver2 velocity failsafe block:
+        // (Kept as comment placeholder—paste your exact block here if you want it active in this file)
+        // if (gamepad2.right_trigger > 0.5) {
+        //     if (gamepad2.dpad_up) { targetVelocity = 1400; }
+        //     else if (gamepad2.dpad_down) { targetVelocity = 1600; }
+        //     else if (gamepad2.dpad_left) { targetVelocity = 1240; }
+        //     if (gamepad2.leftBumperWasPressed()) targetVelocity -= 10;
+        //     else if (gamepad2.rightBumperWasPressed()) targetVelocity += 10;
+        // }
+    }
+
+    // ============================ RT PRESS EVENT ============================
+
+    // Debounced RT "press event" for driver1
+    public boolean rightTriggerPressedEvent() {
         double rt = gamepad1.right_trigger;
 
-        // Hysteresis to prevent flicker around threshold
         if (!rtHeld && rt > 0.55) rtHeld = true;
         else if (rtHeld && rt < 0.45) rtHeld = false;
 
-        boolean pressedEvent = rtHeld && !rtPrevHeld;  // rising edge
+        boolean pressedEvent = rtHeld && !rtPrevHeld;
         rtPrevHeld = rtHeld;
 
         return pressedEvent;
     }
 
-    // -------------------- Geometry helpers --------------------
-    private void setHeadingGoal() {
+    // ============================ HEADING HELPERS ============================
+
+    public void setHeadingGoal() {
         headingGoal = Math.atan2(
                 targetPose.getY() - follower.getPose().getY(),
                 targetPose.getX() - follower.getPose().getX()
         );
     }
 
-    private double distanceFromGoal() {
-        return Math.sqrt(
-                Math.pow(targetPose.getX() - follower.getPose().getX(), 2) +
-                        Math.pow(targetPose.getY() - follower.getPose().getY(), 2)
-        );
-    }
-
-    private double getHeadingError() {
+    public double getHeadingError() {
         headingError =
                 MathFunctions.getTurnDirection(follower.getPose().getHeading(), headingGoal) *
                         MathFunctions.getSmallestAngleDifference(follower.getPose().getHeading(), headingGoal);

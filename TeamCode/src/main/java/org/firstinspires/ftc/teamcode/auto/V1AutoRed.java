@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.subsystem.Outtake;
 import org.firstinspires.ftc.teamcode.subsystem.drivetrain;
 import org.firstinspires.ftc.teamcode.subsystem.TripleShot;
 
-@Autonomous(name = "AutoRed3B")
+@Autonomous
 public class V1AutoRed extends LinearOpMode {
     private DcMotor bl = null;
     private DcMotor fl = null;

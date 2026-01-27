@@ -15,7 +15,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@TeleOp(name = "Spline Testing")
+@TeleOp
 public class SplineTesting extends OpMode {
     private PanelsTelemetry panelsTelemetry = PanelsTelemetry.INSTANCE;
     private Pose startingPose = new Pose(0, 0, -0);
