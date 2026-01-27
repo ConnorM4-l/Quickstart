@@ -28,4 +28,9 @@ public class feeders {
             rightFeeder.setPower(0);
         }
     }
+
+    public void reverse() {
+        leftFeeder.setPower(-1);
+        rightFeeder.setPower(-1);
+    }
 }

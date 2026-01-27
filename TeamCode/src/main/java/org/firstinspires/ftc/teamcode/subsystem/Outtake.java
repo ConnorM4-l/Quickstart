@@ -103,6 +103,7 @@ public class Outtake {
     }
     public void shootBoth() { feed.update(true, true); }
     public void noShoot() { feed.update(false, false); }
+    public void reverseShoot() { feed.reverse(); }
 
     /*
     motif:

@@ -24,7 +24,7 @@ public class ColorSensorTesting extends OpMode {
 
         int left = colorDetector.detectLeftBallColor();
         int right = colorDetector.detectRightBallColor();
-        
+
         telemetry.addData("Green Position", colorDetector.getGreenPosition());
         telemetry.addData("Left Color", left);
         telemetry.addData("Left Hue", colorDetector.getLeftHue());

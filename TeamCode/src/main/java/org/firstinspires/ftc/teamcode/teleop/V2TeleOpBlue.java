@@ -1,11 +1,11 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
-
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -15,55 +15,81 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystem.Intake;
 import org.firstinspires.ftc.teamcode.subsystem.Outtake;
+import org.firstinspires.ftc.teamcode.subsystem.colorDetector;
 import org.firstinspires.ftc.teamcode.util.InShotZone;
 import org.firstinspires.ftc.teamcode.util.RobotContext;
 
-/*
-Make the driver be able to change heading by a little bit
-*/
 @TeleOp
 public class V2TeleOpBlue extends OpMode {
+
+    // -------------------- Core Drive --------------------
     private Follower follower;
     private PIDFController controller;
-    //public static Pose startingPose;
     private Pose startingPose; //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
-
-    private DcMotorEx leftLauncher = null;
-    private DcMotorEx rightLauncher = null;
-    private CRServo leftFeeder = null;
-    private CRServo rightFeeder = null;
-    private DcMotorSimple intake = null;
-
-    private Outtake shotController;
-    private Intake intakeController;
-    private RobotContext robotContext;
-    private InShotZone inShotZone;
 
     private double offsetHeading = 0;
     private Pose targetPose = new Pose(12.844, 134.239, 0);
     private double targetHeading = 0; //should be in radians
     private double offsetShotHeading = 0;
 
+    private double headingError = 0;
+    private double headingGoal = 0;
+
+    boolean headingLock = true;
+
     private boolean following = false;
     private boolean intaking = false;
+
+    // -------------------- Hardware --------------------
+    private DcMotorEx leftLauncher = null;
+    private DcMotorEx rightLauncher = null;
+    private CRServo leftFeeder = null;
+    private CRServo rightFeeder = null;
+    private DcMotorSimple intake = null;
+
+    // -------------------- Subsystems / Utils --------------------
+    private Outtake shotController;
+    private Intake intakeController;
+    private RobotContext robotContext;
+    private InShotZone inShotZone;
+
+    private colorDetector ballColors;
+
+    // -------------------- Shooting State --------------------
+    private boolean autoShotActive = false;
 
     private boolean shootingLRR = false;
     private boolean shootingRLR = false;
     private boolean shootingRRL = false;
 
-    private double headingError = 0;
-    private double headingGoal = 0;
-
-    private boolean manualPick;
-
     private double targetVelocity = 900;
-
-    boolean headingLock = true;
 
     private boolean manualShot = true;
     private boolean manualDrive = false;
     private boolean prevManualShot = false;
+
+    private boolean manualPick;
+
+    // Driver 2 selected order (Limelight motif): 21=GPP, 22=PGP, 23=PPG
+    private int motif = 23;          // default to PPG unless driver changes it
+    private int positionGreen = 0;   // 1 left, 2 right, 3 back, 0 unknown
+
+    // -------------------- Timers --------------------
+    private Timer teleOpTimer1;
+    private double teleOpTime;
+
+    // -------------------- Trigger Edge / Debounce --------------------
+    private boolean rtHeld = false;      // debounced "pressed"
+    private boolean rtPrevHeld = false;  // previous loop
+
+    private boolean ltHeld = false;
+    private double ltPressStartTime = 0.0;
+
+    // tune these
+    private static final double LT_PRESS_TH = 0.55;   // press threshold
+    private static final double LT_RELEASE_TH = 0.45; // release threshold
+    private static final double LT_HOLD_SEC = 0.30;   // tap vs hold boundary
 
 
     @Override
@@ -92,13 +118,14 @@ public class V2TeleOpBlue extends OpMode {
 
         intakeController = new Intake(hardwareMap);
         shotController = new Outtake(hardwareMap);
+
+        ballColors = new colorDetector(hardwareMap);
+
+        teleOpTimer1 = new Timer();
     }
 
     @Override
     public void start() {
-        //The parameter controls whether the Follower should use break mode on the motors (using it is recommended).
-        //In order to use float mode, add .useBrakeModeInTeleOp(true); to your Drivetrain Constants in Constant.java (for Mecanum)
-        //If you don't pass anything in, it uses the default (false)
         follower.startTeleopDrive();
     }
 
@@ -111,6 +138,8 @@ public class V2TeleOpBlue extends OpMode {
         //shotController.update(distanceFromGoal());
 
         controller.updateError(getHeadingError());
+
+        teleOpTime = teleOpTimer1.getElapsedTimeSeconds();
 
 
         if (gamepad1.a) {
@@ -143,7 +172,28 @@ public class V2TeleOpBlue extends OpMode {
                 }
             }
         } else {
-            //do the automatic shooting process with the sorting from color sensors and shotOrdered from the shotControllers
+
+
+// -------------------- AUTO SHOOT MODE --------------------
+            if (!autoShotActive && rightTriggerPressedEvent()) {
+                // run ONCE at the start
+                ballColors.update();
+                positionGreen = ballColors.getGreenPosition();
+
+                shotController.setMotif(motif);
+                shotController.setPositionGreen(positionGreen);
+
+                autoShotActive = true;
+            }
+
+// keep advancing the outtake state machine until it finishes
+            if (autoShotActive) {
+                shotController.shootOrdered();
+                if (!shotController.isStillShooting()) {
+                    autoShotActive = false;
+                    shotController.noShoot();
+                }
+            }
         }
 
         if (gamepad2.right_trigger > 0.5) {
@@ -163,6 +213,47 @@ public class V2TeleOpBlue extends OpMode {
             } else if (gamepad2.rightBumperWasPressed()) {
                 targetVelocity += 10;
             }
+        }
+
+        // ----- LEFT TRIGGER: tap = noShoot, hold = reverseShoot -----
+        double lt = gamepad1.left_trigger;
+
+// hysteresis to prevent flicker
+        if (!ltHeld && lt > LT_PRESS_TH) {
+            ltHeld = true;
+            ltPressStartTime = teleOpTime;   // record start time
+        } else if (ltHeld && lt < LT_RELEASE_TH) {
+            // released -> decide tap vs hold
+            double heldSec = teleOpTime - ltPressStartTime;
+            ltHeld = false;
+
+            if (heldSec < LT_HOLD_SEC) {
+                // TAP
+                shotController.noShoot();
+            }
+            // if it was a hold, reverseShoot() was already being applied while held
+        }
+
+// while held long enough -> reverse shoot
+        if (ltHeld && (teleOpTime - ltPressStartTime) >= LT_HOLD_SEC) {
+            shotController.reverseShoot();
+        }
+
+
+        // -------------------- Driver 2 selects motif (order) --------------------
+// Mapping:
+// gp2.x -> 21 (GPP)
+// gp2.y -> 22 (PGP)
+// gp2.b -> 23 (PPG)
+        if (gamepad2.xWasPressed()) {
+            motif = 21;
+            gamepad2.rumble(150);
+        } else if (gamepad2.yWasPressed()) {
+            motif = 22;
+            gamepad2.rumble(150);
+        } else if (gamepad2.bWasPressed()) {
+            motif = 23;
+            gamepad2.rumble(150);
         }
 
         if (gamepad1.xWasPressed()) {
@@ -202,14 +293,30 @@ public class V2TeleOpBlue extends OpMode {
         telemetry.update();
     }
 
+    // Call this each loop
+    public boolean rightTriggerPressedEvent() {
+        // Hysteresis: press at 0.55, release at 0.45 (prevents flicker near 0.5)
+        double rt = gamepad1.right_trigger;
+
+        if (!rtHeld && rt > 0.55) rtHeld = true;
+        else if (rtHeld && rt < 0.45) rtHeld = false;
+
+        boolean pressedEvent = rtHeld && !rtPrevHeld;  // true only once per press
+        rtPrevHeld = rtHeld;
+
+        return pressedEvent;
+    }
+
     public void setHeadingGoal() {
         headingGoal = Math.atan2(
                 targetPose.getY() - follower.getPose().getY(),
                 targetPose.getX() - follower.getPose().getX());
     }
+
     public double distanceFromGoal() {
         return Math.sqrt(Math.pow(targetPose.getX() - follower.getPose().getX(), 2) + Math.pow(targetPose.getY() - follower.getPose().getY(), 2));
     }
+
     public boolean isAligned() {
         return Math.abs(follower.getHeading() - targetHeading) < 0.1;
     }
@@ -219,4 +326,3 @@ public class V2TeleOpBlue extends OpMode {
         return headingError;
     }
 }
-

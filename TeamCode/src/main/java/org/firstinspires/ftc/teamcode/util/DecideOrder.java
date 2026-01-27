@@ -25,7 +25,6 @@ public class DecideOrder {
         if (positionGreen < 1 || positionGreen > 3) return -1;
 
         switch (motif) {
-
             case 21: // GPP: green must be first
                 if (positionGreen == 1) return 3; // LR: shoot L first (green), then R (purple)
                 if (positionGreen == 2) return 4; // RL: shoot R first (green), then L (purple)
