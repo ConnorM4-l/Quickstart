@@ -122,6 +122,7 @@ public class V2TeleOpBlue extends OpMode {
     @Override
     public void loop() {
         follower.update();
+        shotController.update(distanceFromGoal());
 
         // Keep our heading goal updated every loop
         setHeadingGoal();
@@ -165,6 +166,7 @@ public class V2TeleOpBlue extends OpMode {
         telemetry.addData("motif", motif);
         telemetry.addData("positionGreen", positionGreen);
         telemetry.addData("headingError", headingError);
+        telemetry.addData("distanceFromGoal", distanceFromGoal());
         telemetry.update();
     }
 
@@ -459,4 +461,12 @@ public class V2TeleOpBlue extends OpMode {
                         MathFunctions.getSmallestAngleDifference(follower.getPose().getHeading(), headingGoal);
         return headingError;
     }
+
+    public double distanceFromGoal() {
+        return Math.sqrt(
+                Math.pow(targetPose.getX() - follower.getPose().getX(), 2) +
+                        Math.pow(targetPose.getY() - follower.getPose().getY(), 2)
+        );
+    }
+
 }
