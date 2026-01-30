@@ -105,7 +105,7 @@ public class BlueCloseNine extends OpMode {
         telemetry.addData("motif", motif);
         telemetry.addData("autoShotActive", autoShotActive);
         telemetry.addData("autoShotSetupDone", autoShotSetupDone);
-        telemetry.addData("greenPos", ballColors.getGreenPosition()); // only if you have getter; otherwise print local
+        telemetry.addData("greenPos", ballColors.getGreenPosition()); // only if we have getter; otherwise print local
         telemetry.addData("leftColor", ballColors.detectLeftBallColor());
         telemetry.addData("rightColor", ballColors.detectRightBallColor());
         telemetry.update();

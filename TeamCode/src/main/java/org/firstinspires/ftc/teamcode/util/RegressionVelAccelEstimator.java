@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode.util;
 
 public class RegressionVelAccelEstimator {
     private final double sampleSize;
-    private final double[] positions;
+    private final double[] velocities;
     private final double[] times;
 
     private double prevVel = 0;
@@ -20,7 +20,7 @@ public class RegressionVelAccelEstimator {
     public RegressionVelAccelEstimator(int sampleSize) {
         this.sampleSize = sampleSize;
 
-        positions = new double[sampleSize];
+        velocities = new double[sampleSize];
         times = new double[sampleSize];
 
         prevIndex = sampleSize-1;
@@ -29,22 +29,17 @@ public class RegressionVelAccelEstimator {
     }
 
     public void update(double velocity) {
-//        positions[curIndex] = curPos;
-//        times[curIndex] = ((double) System.nanoTime()) / 1e9;
-
-        prevVel = vel;
+        velocities[curIndex] = velocity;
+        times[curIndex] = ((double) System.nanoTime()) / 1e9;
 
         //Calculating new vals
-        double[] regressionVals = QuadraticRegression.calc(times, positions);
+        double[] regressionVals = QuadraticRegression.calc(times, velocities);
 
-//        vel = 2 * regressionVals[0] * times[curIndex] + regressionVals[1];
-        vel = velocity;
+        accel = 2 * regressionVals[0] * times[curIndex] + regressionVals[1];
 
-        if (!Double.isFinite(vel)) {
-            vel = 0;
+        if (!Double.isFinite(accel)) {
+            accel = 0;
         }
-
-        accel = (vel-prevVel)/(times[curIndex]-times[prevIndex]);
 
         //Updating index
         prevIndex = curIndex;
@@ -57,13 +52,13 @@ public class RegressionVelAccelEstimator {
     public void reset() {
         double time = ((double) System.currentTimeMillis()) / 1000;
         for (int i = 0; i < sampleSize; i++) {
-            positions[i] = 0;
+            velocities[i] = 0;
             times[i] = time + (-sampleSize + i)/50;
         }
     }
 
     public double getVel() {
-        return vel;
+        return velocities[curIndex];
     }
 
     public double getAccel() {

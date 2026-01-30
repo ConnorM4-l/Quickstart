@@ -72,7 +72,7 @@ public class LauncherTesting extends OpMode {
         telemetryM.addData("Launcher target velocity", launcherInitVelocity);
         telemetryM.addData("Launcher left velocity", shotController.getLeftVelocity());
         telemetryM.addData("Launcher right velocity", shotController.getRightVelocity());
-        telemetryM.addData("Launcher acceleration", shotController.getLeftAcceleration());
+        telemetryM.addData("Launcher acceleration", shotController.getRightAcceleration());
 
         telemetryM.update();
     }

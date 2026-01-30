@@ -39,6 +39,8 @@ public class Outtake {
     private boolean prevLeft = false;
     private boolean left = false;
 
+    private double velocityRequested = 0;
+
     // ---------------- QUICK 3-SHOT MODE ----------------
     private boolean quick3Active = false;        // state machine running
     private boolean quick3IntakeStarted = false; // ensure intake start happens once
@@ -95,7 +97,7 @@ public class Outtake {
     }
 
     public void update(double distanceFromGoal) {
-        //double velocityRequested = velocitySolver.getVelocity(distanceFromGoal);
+        velocityRequested = velocitySolver.getVelocity(distanceFromGoal);
 
 
         launcher.update(distanceFromGoal);
@@ -203,7 +205,7 @@ public class Outtake {
                     shotsLeft = 1;
                     launcherTimer.reset();
                     intake.spin(1);      // NEW: pull back ball to left
-                    shootLeft();         // command second left shot
+                    // command second left shot feed should still be spinning
                 }
                 // SECOND left shot finishes -> go to SHOOT_BOTH for final ball
                 else if (shotsLeft == 1 && (shotLeftEvent() || launcherTime > timeShot)) {
@@ -493,6 +495,9 @@ public class Outtake {
         return ballsInRobot;
     }
 
+    public double getVelocityRequested() { return velocityRequested; }
+
+
     public int getShotsLeft() {
         return shotsLeft;
     }
@@ -524,18 +529,14 @@ public class Outtake {
     }
 
     private boolean hasShotLeft() {
-        if (getLeftAcceleration() > -1000) {
-            leftLauncherTimer.reset();
-        } else if (leftLauncherTime > 0.1 && getLeftAcceleration() < -1000) {
+        if (getLeftAcceleration() < -2000) {
             return true;
         }
         return false;
     }
 
     private boolean hasShotRight() {
-        if (getRightAcceleration() > -1000) {
-            rightLauncherTimer.reset();
-        } else if (rightLauncherTime > 0.1 && getRightAcceleration() < -1000) {
+        if (getRightAcceleration() < -2000) {
             return true;
         }
         return false;

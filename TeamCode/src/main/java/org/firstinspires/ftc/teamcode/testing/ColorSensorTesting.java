@@ -1,10 +1,12 @@
 package org.firstinspires.ftc.teamcode.testing;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 
 import org.firstinspires.ftc.teamcode.subsystem.colorDetector;
 
+@TeleOp(name = "Color Sensor Testing")
 public class ColorSensorTesting extends OpMode {
     private ColorSensor colorSensor;
     private colorDetector colorDetector;

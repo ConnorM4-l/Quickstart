@@ -84,18 +84,27 @@ public class colorDetector {
 
     /** Shared classification logic. Tune thresholds here. */
     private int detectFromHSV(float[] hsv) {
+
+        //Green
+        // H 155     160    180     120
+        // S 0.8     0.75   1       1
+        // V 0.0588  0.0314 0.0078  0.0039
+        //Purple
+        // H
+        // S
+        // V
         float h = hsv[0]; // 0..360
         float s = hsv[1]; // 0..1
         float v = hsv[2]; // 0..1
 
         // Reject "no ball / too dark / too gray"
-        if (v < 0.12f || s < 0.25f) return NONE;
+        if (v < 0.003f || s < 0.25f) return NONE;
 
-        // Green (~90..150)
-        if (h >= 90f && h <= 150f) return GREEN;
+        // Green (~90..180)
+        if (h >= 90f && h <= 180f) return GREEN;
 
-        // Purple (~250..310)
-        if (h >= 250f && h <= 310f) return PURPLE;
+        // Purple (~180..310)
+        if (h > 180f && h <= 310f) return PURPLE;
 
         return NONE;
     }

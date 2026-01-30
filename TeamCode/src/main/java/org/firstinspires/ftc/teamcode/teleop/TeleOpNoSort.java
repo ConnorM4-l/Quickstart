@@ -7,6 +7,7 @@ import com.pedropathing.ftc.localization.Encoder;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -21,6 +22,7 @@ import org.firstinspires.ftc.teamcode.subsystem.limelight;
 import org.firstinspires.ftc.teamcode.subsystem.drivetrain;
 import org.firstinspires.ftc.teamcode.util.VelocitySolver;
 
+@Disabled
 @TeleOp(name = "TeleOpNoSort")
 public class TeleOpNoSort extends OpMode {
     private DcMotor bl = null;

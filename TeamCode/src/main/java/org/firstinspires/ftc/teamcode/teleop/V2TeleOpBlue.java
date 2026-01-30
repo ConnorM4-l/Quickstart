@@ -122,7 +122,9 @@ public class V2TeleOpBlue extends OpMode {
     @Override
     public void loop() {
         follower.update();
-        shotController.update(distanceFromGoal());
+
+        //do this while in shoot mode
+        //shotController.update(distanceFromGoal());
 
         // Keep our heading goal updated every loop
         setHeadingGoal();
@@ -150,11 +152,11 @@ public class V2TeleOpBlue extends OpMode {
         // ---- ManualShot/AutoShot is now toggled by START ----
         updateManualShotToggleStart();
 
-        // ---- Apply drive command ----
-        applyDrive();
-
         // ---- Shooting control ----
         updateShooting();
+
+        // ---- Apply drive command ----
+        applyDrive();
 
         // ---- Feeder reverse LT tap/hold (still works in any mode) ----
         updateLeftTriggerFeedReverse();
@@ -167,6 +169,7 @@ public class V2TeleOpBlue extends OpMode {
         telemetry.addData("positionGreen", positionGreen);
         telemetry.addData("headingError", headingError);
         telemetry.addData("distanceFromGoal", distanceFromGoal());
+        telemetry.addData("requested velocity", shotController.getVelocityRequested());
         telemetry.update();
     }
 
@@ -174,19 +177,21 @@ public class V2TeleOpBlue extends OpMode {
 
     private void applyDrive() {
         if (!manualDrive) {
+            //spin up flywheel while in heading lock
+            //shotController.update(distanceFromGoal());
             // Heading lock turning
             follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y,
-                    -gamepad1.left_stick_x,
+                    -Math.pow(gamepad1.left_stick_y, 2),
+                    -Math.pow(gamepad1.left_stick_x, 2),
                     controller.run(),
                     true
             );
         } else {
             // Manual turning
             follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y,
-                    -gamepad1.left_stick_x,
-                    -gamepad1.right_stick_x,
+                    -Math.pow(gamepad1.left_stick_y, 2),
+                    -Math.pow(gamepad1.left_stick_x, 2),
+                    -Math.pow(gamepad1.right_stick_x, 2),
                     true
             );
         }
