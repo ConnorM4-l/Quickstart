@@ -15,6 +15,7 @@ public class flywheel {
 
     private double rightPower = 0;
     private double leftPower = 0;
+    private boolean didReset = false;
 
     private final VelocityPIDController rightLauncherController = new VelocityPIDController();
     private final VelocityPIDController leftLauncherController = new VelocityPIDController();
@@ -43,12 +44,18 @@ public class flywheel {
         rightPower = rightLauncherController.update(LAUNCHER_TARGET_VELOCITY, rightLauncher.getVelocity());
         leftPower = leftLauncherController.update(LAUNCHER_TARGET_VELOCITY, -leftLauncher.getVelocity());
 
-        setPower();
+        rightLauncher.setPower(rightPower);
+        leftLauncher.setPower(leftPower);
+
+        didReset = false;
     }
 
-    private void setPower() {
-        leftLauncher.setPower(leftPower);
-        rightLauncher.setPower(rightPower);
+    public void stop() {
+        if (!didReset) {
+            leftLauncher.setPower(0);
+            rightLauncher.setPower(0);
+            didReset = true;
+        }
     }
 
     public double getLeftErr() {

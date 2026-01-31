@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.auto;
 
+import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.geometry.BezierCurve;
@@ -20,6 +22,8 @@ public class RedPaths {
     public PathChain goIntakeRestInRow;
     public PathChain moveBackToShotThirdTime;
     public PathChain goToPark;
+
+    private BluePaths bluePaths = new BluePaths(AutoType.CLOSE_NINE, follower);
 
     //make an enum that stores the different paths like closeSixBall, farSixBall, ect.
     public RedPaths(Follower follower) {

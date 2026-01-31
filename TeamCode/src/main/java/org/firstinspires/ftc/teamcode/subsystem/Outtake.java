@@ -99,8 +99,7 @@ public class Outtake {
     public void update(double distanceFromGoal) {
         velocityRequested = velocitySolver.getVelocity(distanceFromGoal);
 
-
-        launcher.update(distanceFromGoal);
+        launcher.update(velocityRequested);
         launcherTime = launcherTimer.seconds();
         rightLauncherTime = rightLauncherTimer.seconds();
         leftLauncherTime = leftLauncherTimer.seconds();
@@ -446,6 +445,10 @@ public class Outtake {
         launcherTimer.reset();
         leftLauncherTimer.reset();
         rightLauncherTimer.reset();
+    }
+
+    public void stopFlywheel() {
+        launcher.stop();
     }
 
 

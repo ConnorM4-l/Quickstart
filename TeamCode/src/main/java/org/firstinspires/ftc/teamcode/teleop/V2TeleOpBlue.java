@@ -176,24 +176,28 @@ public class V2TeleOpBlue extends OpMode {
     // ============================ DRIVE ============================
 
     private void applyDrive() {
+        double ly = Math.signum(gamepad1.left_stick_y);
+        double lx = Math.signum(gamepad1.left_stick_x);
+
         if (!manualDrive) {
             //spin up flywheel while in heading lock
-            //shotController.update(distanceFromGoal());
+            shotController.update(distanceFromGoal());
             // Heading lock turning
             follower.setTeleOpDrive(
-                    -Math.pow(gamepad1.left_stick_y, 2),
-                    -Math.pow(gamepad1.left_stick_x, 2),
+                    -Math.pow(gamepad1.left_stick_y, 2) * ly,
+                    -Math.pow(gamepad1.left_stick_x, 2) * lx,
                     controller.run(),
                     true
             );
         } else {
             // Manual turning
             follower.setTeleOpDrive(
-                    -Math.pow(gamepad1.left_stick_y, 2),
-                    -Math.pow(gamepad1.left_stick_x, 2),
-                    -Math.pow(gamepad1.right_stick_x, 2),
+                    -Math.pow(gamepad1.left_stick_y, 2) * ly,
+                    -Math.pow(gamepad1.left_stick_x, 2) * lx,
+                    -gamepad1.right_stick_x,
                     true
             );
+            shotController.stopFlywheel();
         }
     }
 
