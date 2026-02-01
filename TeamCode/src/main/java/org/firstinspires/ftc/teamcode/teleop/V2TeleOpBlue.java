@@ -40,7 +40,7 @@ public class V2TeleOpBlue extends OpMode {
 
     // -------------------- Modes --------------------
     // true = direct feeder control, false = auto shot (quick/ordered)
-    private boolean manualShot = true;
+    private boolean manualShot;
 
     private enum ShotMode { QUICK, ORDERED }
     private ShotMode shotMode = ShotMode.QUICK;   // driver2 toggles this
@@ -110,7 +110,7 @@ public class V2TeleOpBlue extends OpMode {
         follower.startTeleopDrive();
 
         manualDrive = true;                 // default: manual turning
-        manualShot = true;                  // default: manual feeder control
+        manualShot = false;                  // default: manual feeder control
         autoCycleState = AutoCycleState.IDLE;
 
         intakeOn = false;

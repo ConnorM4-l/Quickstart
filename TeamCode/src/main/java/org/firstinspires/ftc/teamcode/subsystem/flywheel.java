@@ -31,6 +31,8 @@ public class flywheel {
         leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
         rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
 
+        leftLauncher.setDirection(DcMotorSimple.Direction.REVERSE);
+
         rightLauncherEncoder = new Encoder(rightLauncher);
         leftLauncherEncoder = new Encoder(leftLauncher);
 
@@ -42,7 +44,7 @@ public class flywheel {
 //        power = launcherController.update(LAUNCHER_TARGET_VELOCITY, rightLauncherEncoder.getDeltaPosition() * 60.0 / 28);
         //may need to change sign on the rightLauncher.getVelocity()
         rightPower = rightLauncherController.update(LAUNCHER_TARGET_VELOCITY, rightLauncher.getVelocity());
-        leftPower = leftLauncherController.update(LAUNCHER_TARGET_VELOCITY, -leftLauncher.getVelocity());
+        leftPower = leftLauncherController.update(LAUNCHER_TARGET_VELOCITY, leftLauncher.getVelocity());
 
         rightLauncher.setPower(rightPower);
         leftLauncher.setPower(leftPower);
