@@ -18,8 +18,14 @@ import org.firstinspires.ftc.teamcode.subsystem.colorDetector;
 import org.firstinspires.ftc.teamcode.util.RobotContext;
 
 
-@Autonomous(name = "blue close nine")
-public class BlueCloseNine extends OpMode {
+@Autonomous(name = "red close nine")
+public class RedCloseNine extends OpMode {
+    private DcMotorEx leftLauncher = null;
+    private DcMotorEx rightLauncher = null;
+    private CRServo leftFeeder = null;
+    private CRServo rightFeeder = null;
+    private DcMotorSimple intake = null;
+
     private Pose startPose;
 
     private int pathState = 0;
@@ -42,7 +48,7 @@ public class BlueCloseNine extends OpMode {
     private Timer autoTimer, globalTimer;
     private double globalTime;
 
-    private BluePaths bluePaths;
+    private RedPaths bluePaths;
 
     private Follower follower;
 
@@ -53,8 +59,8 @@ public class BlueCloseNine extends OpMode {
     @Override
     public void init() {
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(19.147, 119.477, Math.toRadians(144)));
-        bluePaths = new BluePaths(AutoType.CLOSE_NINE, follower);
+        follower.setStartingPose(new Pose(144 - 19.147, 119.477, Math.toRadians(180 - 144)));
+        bluePaths = new RedPaths(AutoType.CLOSE_NINE, follower);
 
         intakeController = new Intake(hardwareMap);
         shotController = new Outtake(hardwareMap);
@@ -127,7 +133,6 @@ public class BlueCloseNine extends OpMode {
                     // When finished, leave to intake path
                     if (!autoShotActive) {
                         follower.followPath(bluePaths.intake1p1Path);
-                        shotController.cancelAllShooting();
                         intakeController.spin(1);
                         autoTimer.resetTimer();
                         pathState = 21;

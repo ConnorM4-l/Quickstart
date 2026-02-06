@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
@@ -31,7 +32,7 @@ public class Constants {
             0.99,
             100,
             1,
-            1);
+            0.9);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)

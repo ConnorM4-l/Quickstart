@@ -12,6 +12,7 @@ public class Outtake {
     ElapsedTime launcherTimer = new ElapsedTime();
     ElapsedTime leftLauncherTimer = new ElapsedTime();
     ElapsedTime rightLauncherTimer = new ElapsedTime();
+    private final ElapsedTime shotClock = new ElapsedTime();
 
 
     private flywheel launcher;
@@ -76,7 +77,7 @@ public class Outtake {
         SHOOT_THREE_QUICK;
     }
     //get this as low as possible, grip tape?
-    public static double timeShot = 3;
+    public static double timeShot = 2;
     public static double timeBetween;
 
     LaunchingState launchingState = LaunchingState.SPIN;
@@ -91,6 +92,8 @@ public class Outtake {
         launcherTimer.reset();
         leftLauncherTimer.reset();
         rightLauncherTimer.reset();
+        shotClock.reset();
+
 
         motif = 0;
         positionGreen = 0;
@@ -153,11 +156,15 @@ public class Outtake {
                     prevShotL = false;
                     prevShotR = false;
 
+                    lastLeftShotSec  = -1e9;
+                    lastRightShotSec = -1e9;
+
                     int order = new DecideOrder().order(motif, positionGreen);
+
+                    totalShots = 0;
 
                     if (order == -1) {
                         // shoot all 3, order doesn't matter
-                        totalShots = 0;
                         shootBoth();
                         intake.spin(1);
                         launcherTimer.reset();
@@ -215,7 +222,7 @@ public class Outtake {
                     shootBoth();         // run both feeders for last ball
                     intake.spin(1);      // keep pushing back ball forward
                     launcherTimer.reset();
-                    launchingState = LaunchingState.SHOOT_BOTH;
+                    launchingState = LaunchingState.SHOOT1;
                 }
                 break;
 
@@ -242,7 +249,7 @@ public class Outtake {
                     shootBoth();
                     intake.spin(1);
                     launcherTimer.reset();
-                    launchingState = LaunchingState.SHOOT_BOTH;
+                    launchingState = LaunchingState.SHOOT1;
                 }
                 break;
 
@@ -268,7 +275,7 @@ public class Outtake {
                     shootBoth();
                     intake.spin(1);          // push the back ball for the last shot
                     launcherTimer.reset();
-                    launchingState = LaunchingState.SHOOT_BOTH;
+                    launchingState = LaunchingState.SHOOT1;
                 }
                 break;
 
@@ -294,11 +301,39 @@ public class Outtake {
                     shootBoth();
                     intake.spin(1);
                     launcherTimer.reset();
-                    launchingState = LaunchingState.SHOOT_BOTH;
+                    launchingState = LaunchingState.SHOOT1;
                 }
                 break;
 
             case SHOOT_BOTH:
+                if (enteredState()) {
+                    launcherTimer.reset();
+                    // totalShots is NOT reset here (LL/RR/LR/RL enter with totalShots=2)
+                    // intake should already be on, but keep it on
+                    intake.spin(1);
+                }
+
+                if (shotLeftEvent()) totalShots++;
+                if (shotRightEvent()) totalShots++;
+
+                if (totalShots >= 3) {
+                    noShoot();
+                    intake.spin(0);
+                    launchingState = LaunchingState.SPIN;
+                    stillShooting = false;
+                    break;
+                }
+
+                //configure this time to how many shoots are actually requested
+
+                if (launcherTime > (timeShot * 3.0)) {
+                    noShoot();
+                    intake.spin(0);
+                    launchingState = LaunchingState.SPIN;
+                    stillShooting = false;
+                }
+                break;
+            case SHOOT1:
                 if (enteredState()) {
                     launcherTimer.reset();
                     // totalShots is NOT reset here (LL/RR/LR/RL enter with totalShots=2)
@@ -312,22 +347,14 @@ public class Outtake {
                 if (lEvt) totalShots++;
                 if (rEvt) totalShots++;
 
-                if (totalShots >= 3) {
+                if (totalShots >= 3 || launcherTime > (timeShot)) {
                     noShoot();
                     intake.spin(0);
                     launchingState = LaunchingState.SPIN;
                     stillShooting = false;
                     break;
                 }
-
-                if (launcherTime > (timeShot * 3.0)) {
-                    noShoot();
-                    intake.spin(0);
-                    launchingState = LaunchingState.SPIN;
-                    stillShooting = false;
-                }
                 break;
-
             case SHOOTL:
                 if (enteredState()) launcherTimer.reset();
 
@@ -365,7 +392,7 @@ public class Outtake {
 
         // start feeders NOW, intake stays off until first shot is detected
         shootBoth();
-        intake.spin(0);
+        intake.spin(1);
         launcherTimer.reset();
     }
 
@@ -381,7 +408,6 @@ public class Outtake {
 
         // after FIRST recorded shot, start intake ONCE
         if (!quick3IntakeStarted && quick3Shots >= 1) {
-            intake.spin(1);
             quick3IntakeStarted = true;
         }
 
@@ -416,6 +442,9 @@ public class Outtake {
         return quick3Active;
     }
 
+    public boolean isAnyShootingActive() {
+        return quick3Active || stillShooting; // quick burst OR ordered state machine
+    }
 
     public void cancelAllShooting() {
         // Stop any feeder/intake motion immediately
@@ -485,13 +514,17 @@ public class Outtake {
         return launcher.getRightVelocity();
     }
 
-    private double getErr() {
+    public double getErr() {
         return Math.max(Math.abs(launcher.getLeftErr()), Math.abs(launcher.getRightErr()));
     }
 
 
     public double getLeftAcceleration() {
         return launcher.getLeftAcceleration();
+    }
+
+    public double getRightAcceleration() {
+        return launcher.getRightAcceleration();
     }
 
     public double getBallsInRobot() {
@@ -517,19 +550,32 @@ public class Outtake {
     }
 
 
+    private double lastLeftShotSec  = -1e9;
+    private double lastRightShotSec = -1e9;
+    private static final double SHOT_COOLDOWN_SEC = 0.12; // tune 0.10–0.18
+
     private boolean shotLeftEvent() {
-        boolean cur = hasShotLeft();
-        boolean evt = cur && !prevShotL;
-        prevShotL = cur;
-        return evt;
+        double now = shotClock.seconds();
+        if (now - lastLeftShotSec < SHOT_COOLDOWN_SEC) return false;
+
+        if (getLeftAcceleration() < -2000) {
+            lastLeftShotSec = now;
+            return true;
+        }
+        return false;
     }
 
     private boolean shotRightEvent() {
-        boolean cur = hasShotRight();
-        boolean evt = cur && !prevShotR;
-        prevShotR = cur;
-        return evt;
+        double now = shotClock.seconds();
+        if (now - lastRightShotSec < SHOT_COOLDOWN_SEC) return false;
+
+        if (getRightAcceleration() < -2000) {
+            lastRightShotSec = now;
+            return true;
+        }
+        return false;
     }
+
 
     private boolean hasShotLeft() {
         if (getLeftAcceleration() < -2000) {
@@ -560,10 +606,6 @@ public class Outtake {
             return true;
         }
         return false;
-    }
-
-    public double getRightAcceleration() {
-        return launcher.getRightAcceleration();
     }
 
     private boolean enteredState() {

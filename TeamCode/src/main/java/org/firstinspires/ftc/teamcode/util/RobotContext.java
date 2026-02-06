@@ -8,8 +8,4 @@ public class RobotContext {
     public RobotContext() {
         //utility class
     }
-
-    public Pose getStartingPose() {
-        return lastPose;
-    }
 }

@@ -44,7 +44,7 @@ public class V2AutoRedFar extends OpMode {
     @Override
     public void init() {
         follower = Constants.createFollower(hardwareMap);
-        bluePaths = new RedPaths(follower);
+        bluePaths = new RedPaths(AutoType.FAR_SIX, follower);
         follower.setStartingPose(startPose);
 
 

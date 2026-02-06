@@ -18,8 +18,8 @@ import org.firstinspires.ftc.teamcode.subsystem.colorDetector;
 import org.firstinspires.ftc.teamcode.util.RobotContext;
 
 
-@Autonomous(name = "blue close nine")
-public class BlueCloseNine extends OpMode {
+@Autonomous(name = "red far six")
+public class RedFarSix extends OpMode {
     private Pose startPose;
 
     private int pathState = 0;
@@ -42,19 +42,19 @@ public class BlueCloseNine extends OpMode {
     private Timer autoTimer, globalTimer;
     private double globalTime;
 
-    private BluePaths bluePaths;
+    private RedPaths bluePaths;
 
     private Follower follower;
 
     private double autoTime;
 
-    private double requestedDistance = 80;
+    private double requestedDistance = 125;
 
     @Override
     public void init() {
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(19.147, 119.477, Math.toRadians(144)));
-        bluePaths = new BluePaths(AutoType.CLOSE_NINE, follower);
+        follower.setStartingPose(new Pose(56, 8, Math.toRadians(90)));
+        bluePaths = new RedPaths(AutoType.FAR_SIX, follower);
 
         intakeController = new Intake(hardwareMap);
         shotController = new Outtake(hardwareMap);
@@ -129,26 +129,14 @@ public class BlueCloseNine extends OpMode {
                         follower.followPath(bluePaths.intake1p1Path);
                         shotController.cancelAllShooting();
                         intakeController.spin(1);
-                        autoTimer.resetTimer();
                         pathState = 21;
                     }
                 }
                 break;
             case 21:
-                if (follower.getDistanceRemaining() < 15) {
+                if (follower.getDistanceRemaining() < 30) {
                     follower.setMaxPower(0.5);
-                    pathState = 31;
-                }
-                break;
-            case 31:
-                if (!follower.isBusy()) {
-                    follower.followPath(bluePaths.intake1p2Path);
-                    pathState = 32;
-                }
-                break;
-            case 32:
-                if (!follower.isBusy()) {
-                    follower.followPath(bluePaths.intake1p3Path);
+                    autoTimer.resetTimer();
                     pathState = 2;
                 }
                 break;
@@ -181,38 +169,12 @@ public class BlueCloseNine extends OpMode {
                     }
                 }
                 break;
-            case 22:
-                if (follower.getDistanceRemaining() < 15) {
-                    follower.setMaxPower(0.5);
-                    pathState = 4;
-                }
-                break;
             case 4:
                 if (!follower.isBusy()) {
-                    if (autoTimer.getElapsedTimeSeconds() > 0.5) {
-                        follower.setMaxPower(1);
-                        follower.followPath(bluePaths.shoot3Path);
-                        autoTimer.resetTimer();
-                        requestedDistance = 47.23;
-                        pathState = 5;
-                    }
-                } else {
-                    autoTimer.resetTimer();
+                    RobotContext.lastPose = follower.getPose();
+                    pathState = -1;
                 }
                 break;
-            case 5:
-                if (!follower.isBusy()) {
-                    if (!autoShotSetupDone) {
-                        RobotContext.lastPose = follower.getPose();
-                        startAutoShootOnce();
-                    }
-                    runAutoShootUntilDone();
-                    if (!autoShotActive) {
-                        pathState = -1;
-                    }
-                }
-                break;
-
         }
     }
 
@@ -242,3 +204,4 @@ public class BlueCloseNine extends OpMode {
     }
 
 }
+

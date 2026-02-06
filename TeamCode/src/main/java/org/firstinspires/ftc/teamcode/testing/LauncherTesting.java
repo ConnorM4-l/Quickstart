@@ -31,7 +31,7 @@ public class LauncherTesting extends OpMode {
     private Outtake shotController;
     private VelocitySolver velocitySolver;
 
-    public static double launcherInitVelocity = 2700;
+    public static double launcherInitVelocity = 1400;
 
 
     public static boolean shootLeft = false;

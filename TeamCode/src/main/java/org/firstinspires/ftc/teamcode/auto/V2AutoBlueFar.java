@@ -40,6 +40,8 @@ public class V2AutoBlueFar extends OpMode {
 
     private BluePaths bluePaths;
 
+    private RobotContext robotContext;
+
     private Follower follower;
 
 
@@ -47,7 +49,7 @@ public class V2AutoBlueFar extends OpMode {
     public void init() {
         follower = Constants.createFollower(hardwareMap);
         bluePaths = new BluePaths(AutoType.FAR_SIX, follower);
-        follower.setStartingPose(RobotContext.lastPose);
+        follower.setStartingPose(new Pose(19.147, 119.447, 0));
 
         leftLauncher = hardwareMap.get(DcMotorEx.class, "leftLauncher");
         rightLauncher = hardwareMap.get(DcMotorEx.class, "rightLauncher");
@@ -84,11 +86,6 @@ public class V2AutoBlueFar extends OpMode {
         telemetry.addData("left launcher velocity", shotController.getLeftVelocity());
         telemetry.addData("right launcher velocity", shotController.getRightVelocity());
         telemetry.update();
-    }
-
-    @Override
-    public void stop() {
-        savePose();
     }
 
     public void autonomousPathUpdate() {
@@ -168,14 +165,10 @@ public class V2AutoBlueFar extends OpMode {
                 break;
             case 10:
                 if (!follower.isBusy()) {
-                    savePose();
                     pathState = -1;
                 }
                 break;
         }
     }
 
-    private void savePose() {
-        RobotContext.lastPose =follower.getPose();
-    }
 }

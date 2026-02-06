@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
@@ -15,15 +16,16 @@ import org.firstinspires.ftc.teamcode.subsystem.Outtake;
 import org.firstinspires.ftc.teamcode.subsystem.colorDetector;
 import org.firstinspires.ftc.teamcode.util.RobotContext;
 
-@TeleOp
-public class V2TeleOpBlue extends OpMode {
+@Configurable
+@TeleOp (name = "TeleOp Red")
+public class TeleOpRed extends OpMode {
 
     // -------------------- Core Drive --------------------
     private Follower follower;
     private PIDFController controller;
     private Pose startingPose;
 
-    private Pose targetPose = new Pose(12.844, 134.239, 0);
+    private Pose targetPose = new Pose(144 - 12.960,134.998, 0);
 
     private double headingError = 0;
     private double headingGoal = 0;
@@ -39,8 +41,6 @@ public class V2TeleOpBlue extends OpMode {
     private colorDetector ballColors;
 
     // -------------------- Modes --------------------
-    // true = direct feeder control, false = auto shot (quick/ordered)
-    private boolean manualShot;
 
     private enum ShotMode { QUICK, ORDERED }
     private ShotMode shotMode = ShotMode.QUICK;   // driver2 toggles this
@@ -48,7 +48,7 @@ public class V2TeleOpBlue extends OpMode {
     // -------------------- Auto Shot Flow --------------------
     // RT press #1 -> autoAim ON (manualDrive=false)
     // RT press #2 -> start shoot (quick or ordered), returns to manualDrive=true when done
-    private enum AutoCycleState { IDLE, AIMING, SHOOTING }
+    private enum AutoCycleState { IDLE, AIMING, SPIN, SHOOTING }
     private AutoCycleState autoCycleState = AutoCycleState.IDLE;
 
     // Driver 2 selected order (Limelight motif): 21=GPP, 22=PGP, 23=PPG
@@ -56,8 +56,7 @@ public class V2TeleOpBlue extends OpMode {
     private int positionGreen = 0;   // 1 left, 2 right, 3 back, 0 unknown
 
     // -------------------- Intake Toggle --------------------
-    private boolean intakeOn = false;
-    private boolean aPrev = false;
+    private boolean shootingActive = false;
 
     // -------------------- Timers --------------------
     private Timer teleOpTimer1;
@@ -89,10 +88,7 @@ public class V2TeleOpBlue extends OpMode {
     public void init() {
         follower = Constants.createFollower(hardwareMap);
 
-        robotContext = new RobotContext();
-        startingPose = robotContext.getStartingPose();
-
-        follower.setStartingPose(startingPose);
+        follower.setStartingPose(RobotContext.lastPose);
         follower.update();
 
         controller = new PIDFController(new PIDFCoefficients(1.5, 0.0, 0.05, 0.033));
@@ -110,10 +106,8 @@ public class V2TeleOpBlue extends OpMode {
         follower.startTeleopDrive();
 
         manualDrive = true;                 // default: manual turning
-        manualShot = false;                  // default: manual feeder control
         autoCycleState = AutoCycleState.IDLE;
 
-        intakeOn = false;
         intakeController.spin(0);
 
         shotController.cancelAllShooting();
@@ -124,7 +118,11 @@ public class V2TeleOpBlue extends OpMode {
         follower.update();
 
         //do this while in shoot mode
-        //shotController.update(distanceFromGoal());
+        if (shootingActive) {
+            shotController.update(distanceFromGoal());
+        } else {
+            shotController.update(0);
+        }
 
         // Keep our heading goal updated every loop
         setHeadingGoal();
@@ -143,14 +141,14 @@ public class V2TeleOpBlue extends OpMode {
             cancelEverythingToManual();
         }
 
+        // ---- Driver 1 can reset the pose ----
+        resetPose();
+
         // ---- Intake: A toggles forward ON/OFF, B holds reverse ----
         updateIntakeControls();
 
         // ---- ManualDrive is now forced by X/Y ----
         updateManualDriveXYToggle();
-
-        // ---- ManualShot/AutoShot is now toggled by START ----
-        updateManualShotToggleStart();
 
         // ---- Shooting control ----
         updateShooting();
@@ -162,7 +160,6 @@ public class V2TeleOpBlue extends OpMode {
         updateLeftTriggerFeedReverse();
 
         telemetry.addData("manualDrive", manualDrive);
-        telemetry.addData("manualShot", manualShot);
         telemetry.addData("shotMode", shotMode);
         telemetry.addData("autoCycleState", autoCycleState);
         telemetry.addData("motif", motif);
@@ -170,6 +167,7 @@ public class V2TeleOpBlue extends OpMode {
         telemetry.addData("headingError", headingError);
         telemetry.addData("distanceFromGoal", distanceFromGoal());
         telemetry.addData("requested velocity", shotController.getVelocityRequested());
+        telemetry.addData("shootingActive", shootingActive);
         telemetry.update();
     }
 
@@ -181,7 +179,6 @@ public class V2TeleOpBlue extends OpMode {
 
         if (!manualDrive) {
             //spin up flywheel while in heading lock
-            shotController.update(distanceFromGoal());
             // Heading lock turning
             follower.setTeleOpDrive(
                     -Math.pow(gamepad1.left_stick_y, 2) * ly,
@@ -197,7 +194,6 @@ public class V2TeleOpBlue extends OpMode {
                     -gamepad1.right_stick_x,
                     true
             );
-            shotController.stopFlywheel();
         }
     }
 
@@ -223,80 +219,44 @@ public class V2TeleOpBlue extends OpMode {
         if (yPressed) manualDrive = false;  // heading lock (PID)
     }
 
-
-    private void updateManualShotToggleStart() {
-        boolean startNow = gamepad1.start;
-        boolean startPressed = startNow && !startPrev;
-        startPrev = startNow;
-
-        if (!startPressed) return;
-
-        // Flip between manual feeder control and auto shot routines
-        manualShot = !manualShot;
-
-        // If we just switched INTO manualShot, kill any auto routine immediately
-        if (manualShot) {
-            autoCycleState = AutoCycleState.IDLE;
-            manualDrive = true;
-            shotController.cancelAllShooting();
-        } else {
-            // Switched INTO auto shot mode: also hard-cancel any manual feeder hold
-            shotController.noShoot();
-            // Keep manualDrive as-is; driver will use RT press #1 to enter aiming (manualDrive=false)
-        }
-    }
-
     // ============================ INTAKE ============================
 
     private void updateIntakeControls() {
-        // B is hold-to-reverse (unjam/spit)
+        // If any shooting routine is running, Outtake owns intake + feeders.
+        // TeleOp must not fight it (this is what was breaking Quick3 / ordered).
+        shootingActive =
+                (autoCycleState != AutoCycleState.IDLE) ||
+                        shotController.isQuick3Active() ||
+                        shotController.isStillShooting();
+
+        if (shootingActive) {
+            return;
+        }
+
+        // B = hold reverse intake (unjam/spit)
         if (gamepad1.b) {
             intakeController.spin(-1);
             return;
         }
 
-        // A toggles forward intake ON/OFF
-        boolean aNow = gamepad1.a;
-        boolean aPressed = aNow && !aPrev;
-        aPrev = aNow;
-
-        if (aPressed) {
-            intakeOn = !intakeOn;
+        // A = hold intake forward + reverse feeders for safety
+        if (gamepad1.a) {
+            intakeController.spin(1);
+            shotController.reverseShoot();   // keeps balls from creeping into a shot
+            return;
         }
 
-        intakeController.spin(intakeOn ? 1 : 0);
+        // Nothing held: stop intake and stop feeders (safe idle)
+        intakeController.spin(0);
+        shotController.noShoot();
     }
+
 
     // ============================ SHOOTING ============================
 
     private void updateShooting() {
-        // Manual feeder mode: RT=both, LB=left, RB=right (all while held).
         // Alignment gate + D-pad left override remain.
-        if (manualShot) {
-            // If we’re mid auto-cycle, manualShot should not run the feeders
-            if (autoCycleState != AutoCycleState.IDLE) {
-                shotController.noShoot();
-                return;
-            }
 
-            boolean okToShoot = (Math.abs(getHeadingError()) < 0.1) || gamepad1.dpad_left;
-
-            if (okToShoot) {
-                if (gamepad1.right_trigger > 0.5) {
-                    shotController.shootBoth();
-                } else if (gamepad1.left_bumper) {
-                    shotController.shootLeft();
-                } else if (gamepad1.right_bumper) {
-                    shotController.shootRight();
-                } else {
-                    shotController.noShoot();
-                }
-            } else {
-                shotController.noShoot();
-            }
-
-            return;
-        }
 
         // Auto-shot branch (manualShot == false):
         // RT press 1: enter aiming (manualDrive=false)
@@ -317,20 +277,24 @@ public class V2TeleOpBlue extends OpMode {
                 if (rtPressed) {
                     // start shooting
                     beginAutoShooting();
+                    autoCycleState = AutoCycleState.SPIN;
+                }
+                break;
+            case SPIN:
+                if (shotController.getErr() < 100) {
                     autoCycleState = AutoCycleState.SHOOTING;
                 }
                 break;
-
             case SHOOTING:
                 // run whichever shot routine is selected
                 if (shotMode == ShotMode.QUICK) {
                     shotController.runQuick3();
-                    if (!shotController.isQuick3Active()) {
+                    if (!shotController.isQuick3Active() || gamepad1.left_trigger > 0.5) {
                         finishAutoCycleToManual();
                     }
                 } else {
                     shotController.shootOrdered();
-                    if (!shotController.isStillShooting()) {
+                    if (!shotController.isStillShooting() || gamepad1.left_trigger > 0.5) {
                         shotController.noShoot();
                         finishAutoCycleToManual();
                     }
@@ -359,19 +323,24 @@ public class V2TeleOpBlue extends OpMode {
 
     private void finishAutoCycleToManual() {
         manualDrive = true;
+        shotController.cancelAllShooting();
         autoCycleState = AutoCycleState.IDLE;
     }
 
     private void cancelEverythingToManual() {
         // Hard stop everything that could keep moving hardware
         shotController.cancelAllShooting();
-        intakeOn = false;
         intakeController.spin(0);
 
         // Return to manual
         manualDrive = true;
         autoCycleState = AutoCycleState.IDLE;
-        manualShot = true; // safest default after a hard cancel
+    }
+
+    private void resetPose() {
+        if (gamepad1.start) {
+            follower.setPose(new Pose(144 - 134.334, 9.266, Math.toRadians(90)));
+        }
     }
 
     // ============================ FEEDER REVERSE (LT tap/hold) ============================
@@ -418,13 +387,13 @@ public class V2TeleOpBlue extends OpMode {
 
     private void updateMotifSelect() {
         // gp2.x -> 21 (GPP), gp2.y -> 22 (PGP), gp2.b -> 23 (PPG)
-        if (gamepad2.xWasPressed()) {
+        if (gamepad2.dpad_left) {
             motif = 21;
             gamepad2.rumble(150);
-        } else if (gamepad2.yWasPressed()) {
+        } else if (gamepad2.dpad_down) {
             motif = 22;
             gamepad2.rumble(150);
-        } else if (gamepad2.bWasPressed()) {
+        } else if (gamepad2.dpad_right) {
             motif = 23;
             gamepad2.rumble(150);
         }
@@ -479,3 +448,4 @@ public class V2TeleOpBlue extends OpMode {
     }
 
 }
+
