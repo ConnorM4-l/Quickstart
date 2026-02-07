@@ -134,6 +134,7 @@ public class RedCloseNine extends OpMode {
                     if (!autoShotActive) {
                         follower.followPath(bluePaths.intake1p1Path);
                         intakeController.spin(1);
+                        shotController.reverseShoot();
                         autoTimer.resetTimer();
                         pathState = 21;
                     }
@@ -182,6 +183,7 @@ public class RedCloseNine extends OpMode {
                     if (!autoShotActive) {
                         follower.followPath(bluePaths.intake2Path);
                         intakeController.spin(1);
+                        shotController.reverseShoot();
                         pathState = 4;  // go to next path state after intake2 starts
                     }
                 }

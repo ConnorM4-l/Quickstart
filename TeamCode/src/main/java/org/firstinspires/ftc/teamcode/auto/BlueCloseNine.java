@@ -129,6 +129,7 @@ public class BlueCloseNine extends OpMode {
                         follower.followPath(bluePaths.intake1p1Path);
                         shotController.cancelAllShooting();
                         intakeController.spin(1);
+                        shotController.reverseShoot();
                         autoTimer.resetTimer();
                         pathState = 21;
                     }
@@ -177,6 +178,7 @@ public class BlueCloseNine extends OpMode {
                     if (!autoShotActive) {
                         follower.followPath(bluePaths.intake2Path);
                         intakeController.spin(1);
+                        shotController.reverseShoot();
                         pathState = 4;  // go to next path state after intake2 starts
                     }
                 }
