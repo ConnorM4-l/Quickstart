@@ -4,8 +4,10 @@ import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -26,6 +28,7 @@ public class TeleOpRed extends OpMode {
     private Pose startingPose;
 
     private Pose targetPose = new Pose(144 - 12.960,134.998, 0);
+    private Pose parkPose = new Pose(144 - 105.285, 33.175, 0);
 
     private double headingError = 0;
     private double headingGoal = 0;
@@ -83,6 +86,8 @@ public class TeleOpRed extends OpMode {
 
     // -------------------- Driver2 shotMode toggle edge detect --------------------
     private boolean modeTogglePrev = false;
+
+    private PathChain toPark;
 
     @Override
     public void init() {
@@ -177,23 +182,36 @@ public class TeleOpRed extends OpMode {
         double ly = Math.signum(gamepad1.left_stick_y);
         double lx = Math.signum(gamepad1.left_stick_x);
 
-        if (!manualDrive) {
-            //spin up flywheel while in heading lock
-            // Heading lock turning
-            follower.setTeleOpDrive(
-                    -Math.pow(gamepad1.left_stick_y, 2) * ly,
-                    -Math.pow(gamepad1.left_stick_x, 2) * lx,
-                    controller.run(),
-                    true
-            );
-        } else {
-            // Manual turning
-            follower.setTeleOpDrive(
-                    -Math.pow(gamepad1.left_stick_y, 2) * ly,
-                    -Math.pow(gamepad1.left_stick_x, 2) * lx,
-                    -gamepad1.right_stick_x,
-                    true
-            );
+        if (gamepad1.dpad_down) {
+            toPark = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    follower.getPose(),
+                                    parkPose
+                            )
+                    ).setLinearHeadingInterpolation(follower.getPose().getHeading(), Math.toRadians(90))
+
+                    .build();
+            follower.followPath(toPark);
+        }
+        else if (!follower.isBusy()) {
+            if (!manualDrive) {
+                //spin up flywheel while in heading lock
+                // Heading lock turning
+                follower.setTeleOpDrive(
+                        -Math.pow(gamepad1.left_stick_y, 2) * ly,
+                        -Math.pow(gamepad1.left_stick_x, 2) * lx,
+                        controller.run(),
+                        true
+                );
+            } else {
+                // Manual turning
+                follower.setTeleOpDrive(
+                        -Math.pow(gamepad1.left_stick_y, 2) * ly,
+                        -Math.pow(gamepad1.left_stick_x, 2) * lx,
+                        -gamepad1.right_stick_x,
+                        true
+                );
+            }
         }
     }
 
